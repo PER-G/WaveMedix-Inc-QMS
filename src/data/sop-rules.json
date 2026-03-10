@@ -1,0 +1,487 @@
+[
+  {
+    "id": "WM-QMS-002",
+    "name": "Qualitätsmanagementsystem Standardarbeitsanweisung",
+    "nameEn": "Quality Management System Standard Operating Procedure",
+    "purpose": "Regelung der standardisierten Arbeitsabläufe und Qualitätssicherungsmaßnahmen im Qualitätsmanagementsystem zur Gewährleistung einheitlicher Prozesse.",
+    "keyRules": [
+      "Alle Arbeitsschritte müssen gemäß den definierten Standards durchgeführt werden",
+      "Dokumentation und Nachverfolgbarkeit aller Prozessschritte ist sicherzustellen",
+      "Qualitätskontrollpunkte sind an definierten Stellen einzuhalten",
+      "Abweichungen müssen unverzüglich dokumentiert und gemeldet werden",
+      "Schulungen und Kompetenznachweise sind vor Prozessdurchführung erforderlich"
+    ],
+    "keywords": [
+      "QMS",
+      "SOP",
+      "Qualität",
+      "quality",
+      "standard",
+      "procedure",
+      "process",
+      "documentation"
+    ],
+    "formsheets": []
+  },
+  {
+    "id": "WM-SOP-001",
+    "name": "WM-SOP-001",
+    "nameEn": "WM-SOP-001",
+    "purpose": "Konnte nicht automatisch extrahiert werden",
+    "keyRules": [],
+    "keywords": [
+      "wm-sop-001"
+    ],
+    "formsheets": [
+      "WM-SOP-001-F-001",
+      "WM-SOP-001-T-001",
+      "WM-SOP-001-F-002"
+    ]
+  },
+  {
+    "id": "WM-SOP-002",
+    "name": "Dokumentenmanagement und Versionskontrolle",
+    "nameEn": "Document Management and Version Control",
+    "purpose": "Diese SOP definiert die Verfahren zur Erstellung, Überprüfung, Genehmigung und Kontrolle von Dokumenten im Qualitätsmanagementsystem zur Sicherstellung der Dokumentenintegrität und Nachverfolgbarkeit.",
+    "keyRules": [
+      "Alle Dokumente müssen eindeutige Identifikationsnummern und Versionsstände aufweisen",
+      "Dokumentenänderungen erfordern eine formale Überprüfung und Genehmigung durch autorisierte Personen",
+      "Veraltete Dokumente müssen aus dem aktiven System entfernt und archiviert werden",
+      "Dokumentenverteilung muss kontrolliert erfolgen um sicherzustellen dass nur aktuelle Versionen verwendet werden",
+      "Alle Dokumentenaktivitäten müssen nachverfolgbar dokumentiert werden"
+    ],
+    "keywords": [
+      "Dokumentenmanagement",
+      "document management",
+      "Versionskontrolle",
+      "version control",
+      "Dokumentenlenkung",
+      "document control",
+      "Archivierung",
+      "archiving"
+    ],
+    "formsheets": [
+      "WM-SOP-002-F-001"
+    ]
+  },
+  {
+    "id": "WM-SOP-003",
+    "name": "WM-SOP-003",
+    "nameEn": "WM-SOP-003",
+    "purpose": "Konnte nicht automatisch extrahiert werden",
+    "keyRules": [],
+    "keywords": [
+      "wm-sop-003"
+    ],
+    "formsheets": [
+      "WM-SOP-003-F-002",
+      "WM-SOP-003-F-003",
+      "WM-SOP-003-F-004",
+      "WM-SOP-003-F-001"
+    ]
+  },
+  {
+    "id": "WM-SOP-004",
+    "name": "Standardarbeitsanweisung für Warenmanagement",
+    "nameEn": "Standard Operating Procedure for Goods Management",
+    "purpose": "Diese SOP definiert die standardisierten Verfahren für das Warenmanagement, einschließlich Wareneingang, Lagerung, Inventur und Warenausgang zur Gewährleistung der Qualität und Rückverfolgbarkeit.",
+    "keyRules": [
+      "Vollständige Dokumentation aller Warenbewegungen erforderlich",
+      "Identifikation und Kennzeichnung aller eingehenden Waren durchführen",
+      "Lagerungsbedingungen gemäß Spezifikationen einhalten",
+      "Regelmäßige Bestandskontrollen und Inventuren durchführen",
+      "FIFO-Prinzip (First In, First Out) bei der Warenentnahme anwenden"
+    ],
+    "keywords": [
+      "warenmanagement",
+      "goods management",
+      "lagerung",
+      "storage",
+      "inventur",
+      "inventory",
+      "wareneingang",
+      "goods receipt"
+    ],
+    "formsheets": [
+      "WM-SOP-004-F-002",
+      "WM-SOP-004-F-001"
+    ]
+  },
+  {
+    "id": "WM-SOP-005",
+    "name": "Dokumentenverwaltung und Archivierung",
+    "nameEn": "Document Management and Archiving",
+    "purpose": "Regelung der systematischen Verwaltung, Archivierung und Aufbewahrung von Dokumenten im Qualitätsmanagementsystem.",
+    "keyRules": [
+      "Alle Dokumente müssen eindeutig identifiziert und versioniert werden",
+      "Archivierte Dokumente sind für die gesetzlich vorgeschriebene Aufbewahrungsfrist zugänglich zu halten",
+      "Dokumente müssen vor unbefugtem Zugriff und Beschädigung geschützt werden",
+      "Änderungen an Dokumenten sind zu dokumentieren und nachvollziehbar zu machen",
+      "Regelmäßige Überprüfung der Dokumentenaktualität ist durchzuführen"
+    ],
+    "keywords": [
+      "Dokumentenverwaltung",
+      "document management",
+      "Archivierung",
+      "archiving",
+      "Versionskontrolle",
+      "version control",
+      "Aufbewahrungsfristen",
+      "retention periods"
+    ],
+    "formsheets": [
+      "WM-SOP-005-F-001",
+      "WM-SOP-005-F-002"
+    ]
+  },
+  {
+    "id": "WM-SOP-006",
+    "name": "Standard-Arbeitsanweisung (Name nicht erkennbar)",
+    "nameEn": "Standard Operating Procedure (Name not recognizable)",
+    "purpose": "Der Zweck der SOP kann aus dem bereitgestellten XML-Inhalt nicht extrahiert werden, da nur technische Dokumentstruktur ohne inhaltlichen Text übermittelt wurde.",
+    "keyRules": [
+      "Dokumentenstruktur muss XML-Standards entsprechen",
+      "Header- und Footer-Bereiche sind zu verwenden",
+      "Nummerierung ist gemäß Schema anzuwenden",
+      "Schriftarten sind standardisiert zu verwenden",
+      "Formatvorlagen sind einzuhalten"
+    ],
+    "keywords": [
+      "SOP",
+      "standard operating procedure",
+      "arbeitsanweisung",
+      "WM-SOP-006",
+      "dokumentation",
+      "XML",
+      "word document",
+      "procedure"
+    ],
+    "formsheets": [
+      "WM-SOP-006-F-001",
+      "WM-SOP-006-F-002"
+    ]
+  },
+  {
+    "id": "WM-SOP-007",
+    "name": "Standard-Arbeitsanweisung für Qualitätsmanagementsysteme",
+    "nameEn": "Standard Operating Procedure for Quality Management Systems",
+    "purpose": "Definiert standardisierte Verfahren und Arbeitsabläufe im Rahmen des Qualitätsmanagementsystems zur Sicherstellung konsistenter Prozesse und Compliance-Anforderungen.",
+    "keyRules": [
+      "Alle QMS-Prozesse müssen dokumentiert und nachverfolgbar sein",
+      "Regelmäßige Überprüfung und Aktualisierung der Verfahrensdokumentation",
+      "Einhaltung der definierten Arbeitsabläufe und Qualitätsstandards",
+      "Kontinuierliche Verbesserung durch Monitoring und Bewertung",
+      "Schulung und Kompetenznachweis für alle beteiligten Mitarbeiter"
+    ],
+    "keywords": [
+      "Qualitätsmanagementsystem",
+      "QMS",
+      "Standard Operating Procedure",
+      "Arbeitsanweisung",
+      "Prozessdokumentation",
+      "Compliance",
+      "Qualitätsstandards",
+      "kontinuierliche Verbesserung"
+    ],
+    "formsheets": [
+      "WM-SOP-007-F-001",
+      "WM-SOP-007-F-002"
+    ]
+  },
+  {
+    "id": "WM-SOP-008",
+    "name": "Dokumentenbearbeitung und -verwaltung",
+    "nameEn": "Document Processing and Management",
+    "purpose": "Standardisierung der Bearbeitung, Formatierung und Verwaltung von Dokumenten im Qualitätsmanagementsystem zur Sicherstellung einheitlicher Standards.",
+    "keyRules": [
+      "Verwendung der vorgegebenen Dokumentenvorlagen und Formatierungsrichtlinien",
+      "Einhaltung der Versionskontrolle und Änderungsdokumentation",
+      "Strukturierte Nummerierung und Kennzeichnung aller Dokumente",
+      "Sicherstellung der korrekten Header- und Footer-Informationen",
+      "Beachtung der Freigabe- und Genehmigungsverfahren vor Dokumentenveröffentlichung"
+    ],
+    "keywords": [
+      "Dokumentenbearbeitung",
+      "document processing",
+      "Formatierung",
+      "formatting",
+      "Versionskontrolle",
+      "version control",
+      "Dokumentenverwaltung",
+      "document management"
+    ],
+    "formsheets": [
+      "WM-SOP-008-F-001",
+      "WM-SOP-008-F-002"
+    ]
+  },
+  {
+    "id": "WM-SOP-009",
+    "name": "Standardarbeitsanweisung für Qualitätsmanagementsystem",
+    "nameEn": "Standard Operating Procedure for Quality Management System",
+    "purpose": "Definition von standardisierten Arbeitsabläufen und Verfahren zur Sicherstellung der Qualität und Compliance im Unternehmen.",
+    "keyRules": [
+      "Alle Arbeitsschritte müssen dokumentiert und nachvollziehbar sein",
+      "Regelmäßige Überprüfung und Aktualisierung der Verfahren durchführen",
+      "Schulung aller beteiligten Mitarbeiter sicherstellen",
+      "Abweichungen müssen sofort gemeldet und dokumentiert werden",
+      "Kontinuierliche Verbesserung der Prozesse anstreben"
+    ],
+    "keywords": [
+      "SOP",
+      "Standard Operating Procedure",
+      "Qualitätsmanagement",
+      "Quality Management",
+      "Arbeitsanweisung",
+      "Compliance",
+      "Dokumentation",
+      "Verfahren"
+    ],
+    "formsheets": [
+      "WM-SOP-009-F-001"
+    ]
+  },
+  {
+    "id": "WM-SOP-010",
+    "name": "Standardarbeitsanweisung für Qualitätsmanagement",
+    "nameEn": "Standard Operating Procedure for Quality Management",
+    "purpose": "Diese SOP definiert standardisierte Arbeitsabläufe und Verfahren zur Sicherstellung der Qualität in Produktions- und Managementprozessen.",
+    "keyRules": [
+      "Alle Arbeitsschritte müssen dokumentiert und nachvollziehbar sein",
+      "Qualitätsprüfungen sind in definierten Intervallen durchzuführen",
+      "Abweichungen von Standardverfahren erfordern eine schriftliche Genehmigung",
+      "Schulungen und Kompetenznachweise sind vor Arbeitsaufnahme erforderlich",
+      "Korrekturmaßnahmen müssen innerhalb festgelegter Fristen umgesetzt werden"
+    ],
+    "keywords": [
+      "qualitätsmanagement",
+      "quality management",
+      "standardverfahren",
+      "arbeitsanweisung",
+      "SOP",
+      "dokumentation",
+      "qualitätsprüfung",
+      "compliance"
+    ],
+    "formsheets": [
+      "WM-SOP-010-F-001"
+    ]
+  },
+  {
+    "id": "WM-SOP-011",
+    "name": "Überwachung und Dokumentation im Wareneingangslager",
+    "nameEn": "Monitoring and Documentation in Goods Receipt Warehouse",
+    "purpose": "Regelung der Überwachung und ordnungsgemäßen Dokumentation aller Vorgänge im Wareneingangslager zur Sicherstellung der Rückverfolgbarkeit und Qualitätssicherung.",
+    "keyRules": [
+      "Alle Wareneingänge sind vollständig zu dokumentieren mit Datum, Zeit und verantwortlicher Person",
+      "Temperaturkontrolle bei temperatursensiblen Gütern ist lückenlos zu protokollieren",
+      "Schäden oder Abweichungen sind sofort zu melden und zu dokumentieren",
+      "Chargen-/Seriennummern müssen korrekt erfasst und zugeordnet werden",
+      "Lagerplätze sind eindeutig zu kennzeichnen und in der Dokumentation zu vermerken"
+    ],
+    "keywords": [
+      "Wareneingang",
+      "goods receipt",
+      "Dokumentation",
+      "documentation",
+      "Überwachung",
+      "monitoring",
+      "Lager",
+      "warehouse",
+      "Rückverfolgbarkeit",
+      "traceability"
+    ],
+    "formsheets": [
+      "WM-SOP-011-F-001",
+      "WM-SOP-011-F-004",
+      "WM-SOP-011-F-005",
+      "WM-SOP-011-F-002",
+      "WM-SOP-011-F-003"
+    ]
+  },
+  {
+    "id": "WM-SOP-012",
+    "name": "Standardarbeitsanweisung für Qualitätsmanagementsystem",
+    "nameEn": "Standard Operating Procedure for Quality Management System",
+    "purpose": "Definiert einheitliche Verfahren und Arbeitsabläufe zur Sicherstellung der Qualitätsstandards und Compliance-Anforderungen im Unternehmen.",
+    "keyRules": [
+      "Alle Arbeitsschritte müssen gemäß den definierten Verfahren durchgeführt werden",
+      "Dokumentation aller relevanten Qualitätsdaten ist verpflichtend",
+      "Regelmäßige Überprüfung und Validierung der Prozesse erforderlich",
+      "Abweichungen müssen umgehend dokumentiert und bewertet werden",
+      "Schulung aller beteiligten Mitarbeiter vor Verfahrensanwendung"
+    ],
+    "keywords": [
+      "QMS",
+      "Quality Management",
+      "Standardarbeitsanweisung",
+      "SOP",
+      "Qualitätssicherung",
+      "Compliance",
+      "Dokumentation",
+      "Verfahren"
+    ],
+    "formsheets": [
+      "WM-SOP-012-F-002",
+      "WM-SOP-012-F-001"
+    ]
+  },
+  {
+    "id": "WM-SOP-013",
+    "name": "Dokumentenanalyse und Qualitätsmanagement",
+    "nameEn": "Document Analysis and Quality Management",
+    "purpose": "Standardisierte Verfahren zur Analyse und Verwaltung von QMS-Dokumenten mit strukturierter Extraktion wichtiger Informationen und Kennzahlen.",
+    "keyRules": [
+      "Alle Dokumente müssen vollständig analysiert und kategorisiert werden",
+      "Strukturierte Datenextraktion nach vordefinierten Standards durchführen",
+      "Qualitätskennzahlen und Schlüsselinformationen dokumentieren",
+      "Konsistente Formatierung und Metadaten-Verwaltung sicherstellen",
+      "Regelmäßige Überprüfung und Aktualisierung der Dokumentenstruktur"
+    ],
+    "keywords": [
+      "document analysis",
+      "Dokumentenanalyse",
+      "quality management",
+      "Qualitätsmanagement",
+      "data extraction",
+      "Datenextraktion",
+      "metadata",
+      "Metadaten"
+    ],
+    "formsheets": [
+      "WM-SOP-013-F-001",
+      "WM-SOP-013-F-002"
+    ]
+  },
+  {
+    "id": "WM-SOP-015",
+    "name": "Nicht verfügbar (korrupte Datei)",
+    "nameEn": "Not available (corrupted file)",
+    "purpose": "Die bereitgestellte Datei scheint korrupt zu sein und enthält nur technische XML-Metadaten ohne lesbaren SOP-Inhalt.",
+    "keyRules": [
+      "Datei muss in lesbarem Format vorliegen",
+      "SOP-Inhalt muss vollständig verfügbar sein",
+      "Dokumentenstruktur muss intakt sein"
+    ],
+    "keywords": [
+      "corrupted",
+      "XML",
+      "metadata",
+      "unreadable",
+      "korrupt",
+      "unleserlich",
+      "Metadaten",
+      "Datei"
+    ],
+    "formsheets": [
+      "WM-SOP-015-F-001",
+      "WM-SOP-015-F-002"
+    ]
+  },
+  {
+    "id": "WM-SOP-016",
+    "name": "Dokumentenanalyse nicht möglich",
+    "nameEn": "Document analysis not possible",
+    "purpose": "Die bereitgestellte Datei enthält nur technische XML-Strukturdaten ohne lesbaren SOP-Inhalt.",
+    "keyRules": [
+      "Vollständiger SOP-Text erforderlich für Analyse",
+      "Lesbare Dokumentstruktur notwendig",
+      "Inhaltliche Informationen fehlen",
+      "Technische Metadaten allein nicht ausreichend"
+    ],
+    "keywords": [
+      "document",
+      "xml",
+      "structure",
+      "header",
+      "footer",
+      "word",
+      "format",
+      "technical"
+    ],
+    "formsheets": [
+      "WM-SOP-016-F-001",
+      "WM-SOP-016-F-002"
+    ]
+  },
+  {
+    "id": "WM-SOP-017",
+    "name": "Standardarbeitsanweisung (nicht eindeutig identifizierbar aus korrupten Daten)",
+    "nameEn": "Standard Operating Procedure (not clearly identifiable from corrupted data)",
+    "purpose": "Die SOP-Details können aufgrund korrupter XML-Daten nicht eindeutig extrahiert werden. Das Dokument scheint technische Formatierungsinformationen zu enthalten.",
+    "keyRules": [
+      "Dokument ist nicht lesbar - korrupte Datenstruktur",
+      "XML-Formatierung verhindert Inhaltsanalyse",
+      "Header- und Footer-Informationen sind verschlüsselt",
+      "Numbering.xml deutet auf strukturiertes Dokument hin"
+    ],
+    "keywords": [
+      "SOP",
+      "WM-SOP-017",
+      "XML",
+      "word document",
+      "header",
+      "footer",
+      "numbering",
+      "corrupted data"
+    ],
+    "formsheets": [
+      "WM-SOP-017-F-002",
+      "WM-SOP-017-F-001"
+    ]
+  },
+  {
+    "id": "WM-SOP-018",
+    "name": "Standardarbeitsanweisung für Warnungen und Maßnahmen",
+    "nameEn": "Standard Operating Procedure for Warnings and Measures",
+    "purpose": "Diese SOP regelt das systematische Verfahren zur Identifizierung, Bewertung und Umsetzung von Warnungen und korrigierenden Maßnahmen im Qualitätsmanagementsystem.",
+    "keyRules": [
+      "Alle Warnungen müssen innerhalb von 24 Stunden dokumentiert und bewertet werden",
+      "Korrigierende Maßnahmen sind mit Verantwortlichen und Fristen zu versehen",
+      "Die Wirksamkeit umgesetzter Maßnahmen ist zu überwachen und zu dokumentieren",
+      "Bei kritischen Warnungen ist die Geschäftsleitung unverzüglich zu informieren",
+      "Alle Aktivitäten sind vollständig zu dokumentieren und nachverfolgbar zu machen"
+    ],
+    "keywords": [
+      "Warnungen",
+      "warnings",
+      "Maßnahmen",
+      "measures",
+      "Korrektur",
+      "correction",
+      "QMS",
+      "Dokumentation"
+    ],
+    "formsheets": [
+      "WM-SOP-018-F-001",
+      "WM-SOP-018-F-002"
+    ]
+  },
+  {
+    "id": "WM-SOP-019",
+    "name": "Wartung und Instandhaltung medizinischer Geräte",
+    "nameEn": "Maintenance and Servicing of Medical Devices",
+    "purpose": "Regelung der systematischen Wartung und Instandhaltung medizinischer Geräte zur Gewährleistung der Gerätesicherheit und -funktionalität.",
+    "keyRules": [
+      "Regelmäßige Wartungsintervalle gemäß Herstellervorgaben einhalten",
+      "Dokumentation aller Wartungsarbeiten in den entsprechenden Protokollen",
+      "Qualifiziertes Personal für Wartungsarbeiten einsetzen",
+      "Sicherheitsprüfungen vor und nach Wartungsarbeiten durchführen",
+      "Sofortige Meldung bei erkannten Sicherheitsmängeln"
+    ],
+    "keywords": [
+      "Wartung",
+      "Instandhaltung",
+      "maintenance",
+      "medical devices",
+      "Medizinprodukte",
+      "Gerätesicherheit",
+      "Wartungsprotokoll",
+      "servicing"
+    ],
+    "formsheets": [
+      "WM-SOP-019-F-001",
+      "WM-SOP-019-F-002"
+    ]
+  }
+]

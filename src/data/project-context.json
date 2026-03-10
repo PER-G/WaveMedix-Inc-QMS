@@ -1,0 +1,20 @@
+{
+  "company": "Wavemedix Inc.",
+  "products": [
+    { "name": "Q-PSI Tokenizer", "type": "SaMD", "class": "IIb", "status": "Development", "description": "AI-powered clinical text tokenization for medical documentation" },
+    { "name": "Ammonix ECG Agent", "type": "SaMD", "class": "IIa", "status": "Development", "description": "AI-based ECG analysis and interpretation agent" }
+  ],
+  "standards": ["ISO 13485:2016", "IEC 62304:2006+A1:2015", "ISO 14971:2019", "MDR 2017/745", "ISO 14708", "IEC 62443"],
+  "team": [
+    { "name": "Francesca Stingele", "role": "President", "email": "francesca.stingele@wavemedix.ai" },
+    { "name": "Peter Ruppersberg", "role": "CEO & Medical Lead", "email": "peter.ruppersberg@wavemedix.ai" },
+    { "name": "Duangjai Glauser", "role": "Director Quality & Operations", "email": "duangjai.glauser@wavemedix.ai" },
+    { "name": "Matthew Todorov", "role": "AI Research / System Dev", "email": "matthew.todorov@wavemedix.ai" },
+    { "name": "Adele Glauser", "role": "Algorithm Development", "email": "adele.glauser@wavemedix.ai" },
+    { "name": "Lea Grieder", "role": "AI Architecture", "email": "lea.grieder@wavemedix.ai" },
+    { "name": "Paul Elias Ruppersberg", "role": "Process Development", "email": "paul.ruppersberg@wavemedix.ai" }
+  ],
+  "currentPhase": "QMS Setup + Produktentwicklung",
+  "keyDecisions": [],
+  "updatedAt": "2026-02-23"
+}
