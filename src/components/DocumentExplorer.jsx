@@ -24,7 +24,8 @@ export default function DocumentExplorer({
         for (const ld of cat.liveDocs) {
           if (!liveDocs[ld.formsheetId] && !liveDocsLoading[ld.formsheetId]) {
             setLiveDocsLoading((p) => ({ ...p, [ld.formsheetId]: true }));
-            fetch(`/api/live-doc?formsheetId=${ld.formsheetId}`, {
+            const searchUrl = `/api/live-doc?formsheetId=${ld.formsheetId}${ld.driveSearchName ? `&driveSearchName=${ld.driveSearchName}` : ""}`;
+            fetch(searchUrl, {
               headers: { "x-access-token": session.accessToken },
             })
               .then((r) => r.json())
@@ -41,13 +42,15 @@ export default function DocumentExplorer({
     }
   }, [expanded, session?.accessToken, areaConfig.categories]);
 
-  function initializeLiveDoc(formsheetId, formsheetName) {
+  function initializeLiveDoc(formsheetId, formsheetName, driveSearchName) {
     if (!session?.accessToken) return;
     setLiveDocsLoading((p) => ({ ...p, [formsheetId]: true }));
+    const body = { formsheetId, formsheetName };
+    if (driveSearchName) body.driveSearchName = driveSearchName;
     fetch("/api/live-doc", {
       method: "POST",
       headers: { "Content-Type": "application/json", "x-access-token": session.accessToken },
-      body: JSON.stringify({ formsheetId, formsheetName }),
+      body: JSON.stringify(body),
     })
       .then((r) => r.json())
       .then((data) => {
@@ -167,7 +170,7 @@ export default function DocumentExplorer({
                           {doc && !isLoading && (
                             <>
                               <button
-                                onClick={(e) => { e.stopPropagation(); onPreview({ id: doc.id, name: doc.name, mimeType: "application/vnd.google-apps.spreadsheet" }); }}
+                                onClick={(e) => { e.stopPropagation(); onPreview({ id: doc.id, name: doc.name, mimeType: "application/vnd.google-apps.spreadsheet", webViewLink: doc.webViewLink }); }}
                                 style={{ border: "none", background: "#dcfce7", borderRadius: 3, padding: "1px 6px", fontSize: 10, cursor: "pointer", color: "#059669" }}
                               >
                                 <Ic name="eye" size={10} color="#059669" />
@@ -182,7 +185,7 @@ export default function DocumentExplorer({
                           )}
                           {!doc && !isLoading && (
                             <button
-                              onClick={(e) => { e.stopPropagation(); initializeLiveDoc(ld.formsheetId, lang === "en" ? ld.name.en : ld.name.de); }}
+                              onClick={(e) => { e.stopPropagation(); initializeLiveDoc(ld.formsheetId, lang === "en" ? ld.name.en : ld.name.de, ld.driveSearchName); }}
                               style={{ border: "none", background: "#dcfce7", borderRadius: 3, padding: "1px 6px", fontSize: 10, cursor: "pointer", color: "#059669", fontWeight: 600 }}
                             >
                               {lang === "de" ? "Erstellen" : "Initialize"}

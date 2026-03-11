@@ -53,6 +53,14 @@ export const AREA_CONFIG = {
       },
       { path: "Post-Market Surveillance", label: { de: "Post-Market Surveillance", en: "Post-Market Surveillance" }, icon: "eye" },
       { path: "Training & Competence", label: { de: "Schulung & Kompetenz", en: "Training & Competence" }, icon: "users" },
+      {
+        path: "Validation",
+        label: { de: "Validierung", en: "Validation" },
+        icon: "check",
+        liveDocs: [
+          { formsheetId: "WM-SOP-011-F-003", name: { de: "Traceability Matrix (MVP)", en: "Traceability Matrix (MVP)" }, driveSearchName: "Validation_MVP_Traceability_Matrix" },
+        ],
+      },
     ],
   },
 };
