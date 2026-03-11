@@ -64,7 +64,7 @@ export default function DocumentControlTab({ session, lang, t }) {
   async function checkAndPopulate() {
     setPopulating(true);
     try {
-      // Step 1: Check which documents are missing
+      // Step 1: Check which documents are missing in both tabs
       const checkRes = await fetch("/api/populate-master-list", {
         headers: { "x-access-token": session.accessToken },
       });
@@ -75,22 +75,55 @@ export default function DocumentControlTab({ session, lang, t }) {
         return;
       }
 
-      if (checkData.missing.length === 0) {
-        alert(lang === "de"
-          ? `\u2713 Alle ${checkData.totalExpected} Dokumente sind vorhanden.`
-          : `\u2713 All ${checkData.totalExpected} documents are present.`);
+      const { qms, ops, totalMissing } = checkData;
+
+      if (totalMissing === 0) {
+        const msg = lang === "de"
+          ? `✓ Alle Dokumente sind vollständig.\n\n• QMS Documents: ${qms.existingCount} Dokumente ✓\n• Operative Liste: ${ops.existingCount} Dokumente ✓`
+          : `✓ All documents are complete.\n\n• QMS Documents: ${qms.existingCount} docs ✓\n• Operative List: ${ops.existingCount} docs ✓`;
+        alert(msg);
         setPopulating(false);
         return;
       }
 
-      // Step 2: Show missing and ask for confirmation
-      const missingList = checkData.missing.slice(0, 15).map((d) => `  \u2022 ${d.id}: ${d.name}`).join("\n");
-      const moreText = checkData.missing.length > 15
-        ? `\n  ... ${lang === "de" ? "und" : "and"} ${checkData.missing.length - 15} ${lang === "de" ? "weitere" : "more"}`
-        : "";
-      const msg = lang === "de"
-        ? `${checkData.missing.length} von ${checkData.totalExpected} Dokumenten fehlen.\n\nFehlende Dokumente:\n${missingList}${moreText}\n\nFehlende erg\u00E4nzen?`
-        : `${checkData.missing.length} of ${checkData.totalExpected} documents are missing.\n\nMissing documents:\n${missingList}${moreText}\n\nAdd missing documents?`;
+      // Step 2: Build summary of missing documents
+      let msg = lang === "de"
+        ? `Prüfungsergebnis:\n`
+        : `Check result:\n`;
+
+      // QMS tab
+      if (qms.missing.length > 0) {
+        const qmsList = qms.missing.slice(0, 10).map((d) => `  • ${d.id}: ${d.name}`).join("\n");
+        const moreQms = qms.missing.length > 10 ? `\n  ... +${qms.missing.length - 10} ${lang === "de" ? "weitere" : "more"}` : "";
+        msg += lang === "de"
+          ? `\n📋 QMS Documents: ${qms.missing.length} fehlen (von ${qms.totalExpected})\n${qmsList}${moreQms}\n`
+          : `\n📋 QMS Documents: ${qms.missing.length} missing (of ${qms.totalExpected})\n${qmsList}${moreQms}\n`;
+      } else {
+        msg += lang === "de"
+          ? `\n📋 QMS Documents: ✓ vollständig (${qms.existingCount})\n`
+          : `\n📋 QMS Documents: ✓ complete (${qms.existingCount})\n`;
+      }
+
+      // Operative tab
+      if (!ops.tabExists) {
+        msg += lang === "de"
+          ? `\n📂 Operative Liste: Tab nicht gefunden — bitte "Operative Document Control List" Tab in der Tabelle erstellen.\n`
+          : `\n📂 Operative List: Tab not found — please create an "Operative Document Control List" tab in the spreadsheet.\n`;
+      } else if (ops.missing.length > 0) {
+        const opsList = ops.missing.slice(0, 10).map((d) => `  • ${d.id}: ${d.name}`).join("\n");
+        const moreOps = ops.missing.length > 10 ? `\n  ... +${ops.missing.length - 10} ${lang === "de" ? "weitere" : "more"}` : "";
+        msg += lang === "de"
+          ? `\n📂 Operative Liste: ${ops.missing.length} fehlen\n${opsList}${moreOps}\n`
+          : `\n📂 Operative List: ${ops.missing.length} missing\n${opsList}${moreOps}\n`;
+      } else {
+        msg += lang === "de"
+          ? `\n📂 Operative Liste: ✓ vollständig (${ops.existingCount})\n`
+          : `\n📂 Operative List: ✓ complete (${ops.existingCount})\n`;
+      }
+
+      msg += lang === "de"
+        ? `\nFehlende Dokumente jetzt ergänzen?`
+        : `\nAdd missing documents now?`;
 
       if (!confirm(msg)) {
         setPopulating(false);
@@ -107,9 +140,26 @@ export default function DocumentControlTab({ session, lang, t }) {
       if (addData.error) {
         alert(`Error: ${addData.error}`);
       } else {
-        alert(lang === "de"
-          ? `\u2713 ${addData.added} Dokumente erg\u00E4nzt.`
-          : `\u2713 ${addData.added} documents added.`);
+        let resultMsg = lang === "de"
+          ? `✓ Aktualisierung abgeschlossen:\n`
+          : `✓ Update complete:\n`;
+
+        if (addData.qmsAdded > 0) {
+          resultMsg += `\n• QMS Documents: +${addData.qmsAdded} ${lang === "de" ? "ergänzt" : "added"}`;
+        }
+        if (addData.opsAdded > 0) {
+          resultMsg += `\n• Operative Liste: +${addData.opsAdded} ${lang === "de" ? "ergänzt" : "added"}`;
+        }
+        if (addData.opsHeadersWritten) {
+          resultMsg += lang === "de"
+            ? `\n• Operative Headers geschrieben`
+            : `\n• Operative headers written`;
+        }
+        if (addData.opsNote) {
+          resultMsg += `\n\n⚠️ ${addData.opsNote}`;
+        }
+
+        alert(resultMsg);
         setIframeKey((k) => k + 1);
         refresh();
       }
@@ -143,7 +193,7 @@ export default function DocumentControlTab({ session, lang, t }) {
               LIVE
             </div>
             <span style={{ fontSize: 10, color: "#94a3b8" }}>
-              {lang === "de" ? "Zuletzt ge\u00E4ndert" : "Last modified"}: {fmtDate(liveDoc.lastModified)}
+              {lang === "de" ? "Zuletzt geändert" : "Last modified"}: {fmtDate(liveDoc.lastModified)}
             </span>
             {liveDoc.modifiedBy && liveDoc.modifiedBy !== "Unknown" && (
               <span style={{ fontSize: 10, color: "#94a3b8" }}>
@@ -153,7 +203,7 @@ export default function DocumentControlTab({ session, lang, t }) {
             <button
               onClick={checkAndPopulate}
               disabled={populating}
-              title={lang === "de" ? "Pr\u00FCft ob alle SOPs & Formbl\u00E4tter gelistet sind" : "Check if all SOPs & formsheets are listed"}
+              title={lang === "de" ? "Prüft alle Tabs: QMS Documents + Operative Liste" : "Checks all tabs: QMS Documents + Operative List"}
               style={{
                 border: "1px solid #e2e8f0", background: populating ? "#f1f5f9" : "#fff", borderRadius: 4,
                 padding: "3px 10px", cursor: populating ? "wait" : "pointer", fontSize: 10, fontWeight: 600,
@@ -162,15 +212,15 @@ export default function DocumentControlTab({ session, lang, t }) {
             >
               <Ic name="check" size={10} color={color} />
               {populating
-                ? (lang === "de" ? "Pr\u00FCfe..." : "Checking...")
-                : (lang === "de" ? "Dokumente pr\u00FCfen" : "Check Documents")}
+                ? (lang === "de" ? "Prüfe..." : "Checking...")
+                : (lang === "de" ? "Dokumente prüfen" : "Check Documents")}
             </button>
             <button onClick={refresh} title={t.refreshFiles} style={{ border: "1px solid #e2e8f0", background: "#fff", borderRadius: 4, padding: "3px 6px", cursor: "pointer" }}>
               <Ic name="refresh" size={12} color="#64748b" />
             </button>
             <button onClick={() => window.open(liveDoc.webViewLink, "_blank")} style={{ border: "1px solid #e2e8f0", background: "#fff", borderRadius: 4, padding: "3px 8px", cursor: "pointer", fontSize: 11, color: color, fontWeight: 600, display: "flex", alignItems: "center", gap: 4 }}>
               <Ic name="open" size={12} color={color} />
-              {lang === "de" ? "In Drive \u00F6ffnen" : "Open in Drive"}
+              {lang === "de" ? "In Drive öffnen" : "Open in Drive"}
             </button>
           </div>
         )}
