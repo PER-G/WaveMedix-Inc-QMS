@@ -61,32 +61,55 @@ export default function DocumentControlTab({ session, lang, t }) {
       .catch(() => {});
   }
 
-  async function populateMasterList() {
-    const msg = lang === "de"
-      ? "Alle SOPs, Formbl\u00E4tter und die Operative Dokumentenlenkungsliste werden eingetragen/aktualisiert. Fortfahren?"
-      : "All SOPs, formsheets and the Operational Document Register tab will be populated/updated. Continue?";
-    if (!confirm(msg)) return;
-
+  async function checkAndPopulate() {
     setPopulating(true);
     try {
-      const res = await fetch("/api/populate-master-list", {
-        method: "POST",
+      // Step 1: Check which documents are missing
+      const checkRes = await fetch("/api/populate-master-list", {
         headers: { "x-access-token": session.accessToken },
       });
-      const data = await res.json();
-      if (data.error) {
-        alert(`Error: ${data.error}`);
+      const checkData = await checkRes.json();
+      if (checkData.error) {
+        alert(`Error: ${checkData.error}`);
+        setPopulating(false);
+        return;
+      }
+
+      if (checkData.missing.length === 0) {
+        alert(lang === "de"
+          ? `\u2713 Alle ${checkData.totalExpected} Dokumente sind vorhanden.`
+          : `\u2713 All ${checkData.totalExpected} documents are present.`);
+        setPopulating(false);
+        return;
+      }
+
+      // Step 2: Show missing and ask for confirmation
+      const missingList = checkData.missing.slice(0, 15).map((d) => `  \u2022 ${d.id}: ${d.name}`).join("\n");
+      const moreText = checkData.missing.length > 15
+        ? `\n  ... ${lang === "de" ? "und" : "and"} ${checkData.missing.length - 15} ${lang === "de" ? "weitere" : "more"}`
+        : "";
+      const msg = lang === "de"
+        ? `${checkData.missing.length} von ${checkData.totalExpected} Dokumenten fehlen.\n\nFehlende Dokumente:\n${missingList}${moreText}\n\nFehlende erg\u00E4nzen?`
+        : `${checkData.missing.length} of ${checkData.totalExpected} documents are missing.\n\nMissing documents:\n${missingList}${moreText}\n\nAdd missing documents?`;
+
+      if (!confirm(msg)) {
+        setPopulating(false);
+        return;
+      }
+
+      // Step 3: Append only missing documents
+      const addRes = await fetch("/api/populate-master-list", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "x-access-token": session.accessToken },
+        body: JSON.stringify({ action: "append" }),
+      });
+      const addData = await addRes.json();
+      if (addData.error) {
+        alert(`Error: ${addData.error}`);
       } else {
-        const opsMsg = data.opsTabCreated
-          ? (lang === "de" ? "\n+ Tab 'Operative Dokumentenlenkungsliste' erstellt" : "\n+ 'Operative Dokumentenlenkungsliste' tab created")
-          : "";
-        alert(
-          (lang === "de"
-            ? `${data.totalRows} Dokumente eingetragen (${data.sopCount} SOPs + ${data.formsheetCount} Formbl\u00E4tter)`
-            : `${data.totalRows} documents populated (${data.sopCount} SOPs + ${data.formsheetCount} formsheets)`)
-          + opsMsg
-        );
-        // Force iframe reload
+        alert(lang === "de"
+          ? `\u2713 ${addData.added} Dokumente erg\u00E4nzt.`
+          : `\u2713 ${addData.added} documents added.`);
         setIframeKey((k) => k + 1);
         refresh();
       }
@@ -128,19 +151,19 @@ export default function DocumentControlTab({ session, lang, t }) {
               </span>
             )}
             <button
-              onClick={populateMasterList}
+              onClick={checkAndPopulate}
               disabled={populating}
-              title={lang === "de" ? "Alle SOPs & Formbl\u00E4tter eintragen + Ops-Tab erstellen" : "Populate all SOPs & formsheets + create Ops tab"}
+              title={lang === "de" ? "Pr\u00FCft ob alle SOPs & Formbl\u00E4tter gelistet sind" : "Check if all SOPs & formsheets are listed"}
               style={{
                 border: "1px solid #e2e8f0", background: populating ? "#f1f5f9" : "#fff", borderRadius: 4,
                 padding: "3px 10px", cursor: populating ? "wait" : "pointer", fontSize: 10, fontWeight: 600,
                 color: color, display: "flex", alignItems: "center", gap: 4,
               }}
             >
-              <Ic name="plus" size={10} color={color} />
+              <Ic name="check" size={10} color={color} />
               {populating
-                ? (lang === "de" ? "Wird eingetragen..." : "Populating...")
-                : (lang === "de" ? "Alle Dokumente eintragen" : "Populate All")}
+                ? (lang === "de" ? "Pr\u00FCfe..." : "Checking...")
+                : (lang === "de" ? "Dokumente pr\u00FCfen" : "Check Documents")}
             </button>
             <button onClick={refresh} title={t.refreshFiles} style={{ border: "1px solid #e2e8f0", background: "#fff", borderRadius: 4, padding: "3px 6px", cursor: "pointer" }}>
               <Ic name="refresh" size={12} color="#64748b" />

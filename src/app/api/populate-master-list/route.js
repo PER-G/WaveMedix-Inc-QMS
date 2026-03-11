@@ -3,20 +3,109 @@ import { findOrCreateLiveDoc } from "../../../lib/liveDocHelper";
 import { FORMSHEET_REGISTRY } from "../../../lib/formsheetRegistry";
 import { SOPS } from "../../../lib/dashboardHelpers";
 
-const OPS_TAB_NAME = "Operative Dokumentenlenkungsliste";
-const OPS_HEADERS = [
-  "DMS Nr.",
-  "Referenz-SOP",
-  "Dokumentenname",
-  "Version",
-  "Status",
-  "Erstellt am",
-  "Zuletzt ge\u00E4ndert",
-  "Verantwortlich",
-  "Bemerkungen",
-];
+// Build the complete list of expected QMS documents
+function buildExpectedDocs() {
+  const docs = [];
 
-// POST /api/populate-master-list — Write all SOPs + formsheets + create Ops tab
+  // SOPs + Quality Manual
+  for (const sop of SOPS) {
+    const isQM = sop.id.includes("QMS") || sop.id.includes("QMH");
+    docs.push({
+      id: sop.id,
+      name: sop.en,
+      type: isQM ? "QM Manual" : "SOP",
+      sop: "-",
+      format: "docx",
+    });
+  }
+
+  // Formsheets
+  for (const fs of FORMSHEET_REGISTRY) {
+    docs.push({
+      id: fs.id,
+      name: fs.name,
+      type: fs.type === "xlsx" ? "Form" : "Form",
+      sop: fs.sop,
+      format: fs.type,
+    });
+  }
+
+  return docs;
+}
+
+// Helper: get Sheets API client + spreadsheet metadata
+async function getSheetsContext(accessToken) {
+  const liveDoc = await findOrCreateLiveDoc(accessToken, "WM-SOP-001-F-002", "Document Master List");
+  const spreadsheetId = liveDoc.id;
+
+  const auth = new google.auth.OAuth2();
+  auth.setCredentials({ access_token: accessToken });
+  const sheets = google.sheets({ version: "v4", auth });
+
+  // Get sheet metadata
+  const meta = await sheets.spreadsheets.get({ spreadsheetId });
+  const existingSheets = meta.data.sheets || [];
+  const firstSheetName = existingSheets[0]?.properties?.title || "QMS Documents";
+
+  return { sheets, spreadsheetId, firstSheetName };
+}
+
+// Helper: read existing document IDs from column A (skip header rows)
+async function readExistingIds(sheets, spreadsheetId, sheetName) {
+  try {
+    const res = await sheets.spreadsheets.values.get({
+      spreadsheetId,
+      range: `'${sheetName}'!A:A`,
+    });
+
+    const rows = res.data.values || [];
+    const ids = new Set();
+    for (const row of rows) {
+      const val = (row[0] || "").trim();
+      // Skip header-like rows and empty rows
+      if (val && val.startsWith("WM-")) {
+        ids.add(val);
+      }
+    }
+    return ids;
+  } catch {
+    return new Set();
+  }
+}
+
+// GET /api/populate-master-list — Check which documents are missing
+export async function GET(request) {
+  try {
+    const accessToken = request.headers.get("x-access-token");
+    if (!accessToken) {
+      return Response.json({ error: "Not authenticated" }, { status: 401 });
+    }
+
+    const { sheets, spreadsheetId, firstSheetName } = await getSheetsContext(accessToken);
+
+    // Read existing document IDs
+    const existingIds = await readExistingIds(sheets, spreadsheetId, firstSheetName);
+
+    // Build expected documents
+    const expectedDocs = buildExpectedDocs();
+
+    // Find missing
+    const missing = expectedDocs.filter((d) => !existingIds.has(d.id));
+
+    console.log(`[POPULATE] Check: ${existingIds.size} existing, ${missing.length} missing of ${expectedDocs.length} expected`);
+
+    return Response.json({
+      missing,
+      existingCount: existingIds.size,
+      totalExpected: expectedDocs.length,
+    });
+  } catch (error) {
+    console.error("[POPULATE] GET error:", error.message);
+    return Response.json({ error: error.message }, { status: 500 });
+  }
+}
+
+// POST /api/populate-master-list — Append only missing documents (never delete)
 export async function POST(request) {
   try {
     const accessToken = request.headers.get("x-access-token");
@@ -24,183 +113,54 @@ export async function POST(request) {
       return Response.json({ error: "Not authenticated" }, { status: 401 });
     }
 
-    // 1. Get the live Document Master List
-    const liveDoc = await findOrCreateLiveDoc(accessToken, "WM-SOP-001-F-002", "Document Master List");
-    const spreadsheetId = liveDoc.id;
+    const { sheets, spreadsheetId, firstSheetName } = await getSheetsContext(accessToken);
 
-    // 2. Set up Sheets API
-    const auth = new google.auth.OAuth2();
-    auth.setCredentials({ access_token: accessToken });
-    const sheets = google.sheets({ version: "v4", auth });
+    // Re-read existing IDs (safety check against duplicates)
+    const existingIds = await readExistingIds(sheets, spreadsheetId, firstSheetName);
 
-    // 3. Get current sheet metadata
-    const meta = await sheets.spreadsheets.get({ spreadsheetId });
-    const existingSheets = meta.data.sheets || [];
-    const sheetNames = existingSheets.map((s) => s.properties.title);
-    const firstSheet = existingSheets[0];
-    const firstSheetName = firstSheet?.properties?.title || "QMS Documents";
-    const firstSheetGid = firstSheet?.properties?.sheetId || 0;
+    // Build expected and filter to only missing
+    const expectedDocs = buildExpectedDocs();
+    const missing = expectedDocs.filter((d) => !existingIds.has(d.id));
 
-    // 4. Build QMS document rows
-    const qmsHeaders = [
-      "Dokument-ID",
-      "Dokumentenname (DE)",
-      "Dokumentenname (EN)",
-      "Typ",
-      "Zugeh\u00F6riger SOP",
-      "Format",
-      "Version",
-      "Status",
-    ];
-
-    const rows = [];
-
-    // SOPs (including Quality Manual)
-    for (const sop of SOPS) {
-      const isQM = sop.id.includes("QMS") || sop.id.includes("QMH");
-      rows.push([
-        sop.id, sop.de, sop.en,
-        isQM ? "QM-Handbuch" : "SOP",
-        "-", "docx", "1.0", "Active",
-      ]);
+    if (missing.length === 0) {
+      return Response.json({ added: 0, skipped: expectedDocs.length, message: "All documents already present" });
     }
 
-    // Formsheets
-    for (const fs of FORMSHEET_REGISTRY) {
-      rows.push([
-        fs.id, fs.name, fs.name,
-        "Formblatt", fs.sop, fs.type, "1.0", "Active",
-      ]);
-    }
+    // Build rows matching existing sheet format:
+    // Document ID | Title | Type | Version | Status | Effective Date | Owner | Classification | Next Review | Location in DMS
+    const newRows = missing.map((d) => [
+      d.id,                                          // Document ID
+      d.name,                                        // Title
+      d.type,                                        // Type (SOP / QM Manual / Form)
+      "1.0",                                         // Version
+      "Released",                                    // Status
+      "[Date]",                                      // Effective Date
+      "Quality Systems Manager",                     // Owner
+      "Quality (Q)",                                 // Classification
+      "[Date + 3yr]",                                // Next Review
+      d.sop === "-"                                  // Location in DMS
+        ? `/QMS/01_Documents/SOPs/${d.id}/`
+        : `/QMS/01_Documents/Forms/${d.sop}/`,
+    ]);
 
-    // 5. Write QMS Documents to first sheet
-    await sheets.spreadsheets.values.clear({
+    // Append rows at the end (never clear, never delete)
+    await sheets.spreadsheets.values.append({
       spreadsheetId,
-      range: `'${firstSheetName}'`,
-    });
-
-    await sheets.spreadsheets.values.update({
-      spreadsheetId,
-      range: `'${firstSheetName}'!A1`,
+      range: `'${firstSheetName}'!A:J`,
       valueInputOption: "RAW",
-      requestBody: { values: [qmsHeaders, ...rows] },
+      insertDataOption: "INSERT_ROWS",
+      requestBody: { values: newRows },
     });
 
-    // Format first sheet header
-    await sheets.spreadsheets.batchUpdate({
-      spreadsheetId,
-      requestBody: {
-        requests: [
-          {
-            repeatCell: {
-              range: { sheetId: firstSheetGid, startRowIndex: 0, endRowIndex: 1 },
-              cell: {
-                userEnteredFormat: {
-                  textFormat: { bold: true },
-                  backgroundColor: { red: 0.85, green: 0.92, blue: 0.98 },
-                },
-              },
-              fields: "userEnteredFormat(textFormat,backgroundColor)",
-            },
-          },
-          {
-            updateSheetProperties: {
-              properties: { sheetId: firstSheetGid, gridProperties: { frozenRowCount: 1 } },
-              fields: "gridProperties.frozenRowCount",
-            },
-          },
-          {
-            autoResizeDimensions: {
-              dimensions: { sheetId: firstSheetGid, dimension: "COLUMNS", startIndex: 0, endIndex: qmsHeaders.length },
-            },
-          },
-        ],
-      },
-    });
-
-    // 6. Create "Operative Dokumentenlenkungsliste" tab if it doesn't exist
-    let opsTabCreated = false;
-    if (!sheetNames.includes(OPS_TAB_NAME)) {
-      // Find the position: should be after first sheet, before "External References"
-      const extRefIndex = sheetNames.indexOf("External References");
-      const insertIndex = extRefIndex >= 0 ? extRefIndex : existingSheets.length;
-
-      await sheets.spreadsheets.batchUpdate({
-        spreadsheetId,
-        requestBody: {
-          requests: [
-            {
-              addSheet: {
-                properties: {
-                  title: OPS_TAB_NAME,
-                  index: insertIndex,
-                },
-              },
-            },
-          ],
-        },
-      });
-
-      // Get the new sheet's ID
-      const updatedMeta = await sheets.spreadsheets.get({ spreadsheetId });
-      const opsSheet = updatedMeta.data.sheets.find((s) => s.properties.title === OPS_TAB_NAME);
-      const opsGid = opsSheet?.properties?.sheetId || 0;
-
-      // Write headers
-      await sheets.spreadsheets.values.update({
-        spreadsheetId,
-        range: `'${OPS_TAB_NAME}'!A1`,
-        valueInputOption: "RAW",
-        requestBody: { values: [OPS_HEADERS] },
-      });
-
-      // Format ops header
-      await sheets.spreadsheets.batchUpdate({
-        spreadsheetId,
-        requestBody: {
-          requests: [
-            {
-              repeatCell: {
-                range: { sheetId: opsGid, startRowIndex: 0, endRowIndex: 1 },
-                cell: {
-                  userEnteredFormat: {
-                    textFormat: { bold: true },
-                    backgroundColor: { red: 0.84, green: 0.95, blue: 0.9 },
-                  },
-                },
-                fields: "userEnteredFormat(textFormat,backgroundColor)",
-              },
-            },
-            {
-              updateSheetProperties: {
-                properties: { sheetId: opsGid, gridProperties: { frozenRowCount: 1 } },
-                fields: "gridProperties.frozenRowCount",
-              },
-            },
-            {
-              autoResizeDimensions: {
-                dimensions: { sheetId: opsGid, dimension: "COLUMNS", startIndex: 0, endIndex: OPS_HEADERS.length },
-              },
-            },
-          ],
-        },
-      });
-
-      opsTabCreated = true;
-      console.log(`[POPULATE] Created '${OPS_TAB_NAME}' tab in Document Master List`);
-    }
-
-    console.log(`[POPULATE] Wrote ${SOPS.length} SOPs + ${FORMSHEET_REGISTRY.length} formsheets to Document Master List`);
+    console.log(`[POPULATE] Appended ${missing.length} missing documents (skipped ${existingIds.size} existing)`);
 
     return Response.json({
-      success: true,
-      sopCount: SOPS.length,
-      formsheetCount: FORMSHEET_REGISTRY.length,
-      totalRows: rows.length,
-      opsTabCreated,
+      added: missing.length,
+      skipped: existingIds.size,
+      addedDocs: missing.map((d) => d.id),
     });
   } catch (error) {
-    console.error("[POPULATE] Error:", error.message);
+    console.error("[POPULATE] POST error:", error.message);
     return Response.json({ error: error.message }, { status: 500 });
   }
 }
