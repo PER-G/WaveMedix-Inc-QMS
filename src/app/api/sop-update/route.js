@@ -503,13 +503,13 @@ export async function POST(request) {
     });
     console.log(`[SOP-UPDATE] Renamed old: ${sopFile.name} → ${supersededName}`);
 
-    // Step 6: Upload new version to same folder
+    // Step 6: Upload new version to same folder (convert to Google Docs for Drive compatibility)
     const stream = Readable.from(buffer);
     const uploaded = await drive.files.create({
       requestBody: {
-        name: newFileName,
+        name: newFileName.replace(/\.docx$/, ""),
         parents: [FOLDER_ID],
-        mimeType: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        mimeType: "application/vnd.google-apps.document",
       },
       media: {
         mimeType: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",

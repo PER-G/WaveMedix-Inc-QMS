@@ -53,9 +53,9 @@ export async function findSopFile(drive, sopId) {
     }
   }
 
-  // Check root-level files first
+  // Check root-level files first (skip SUPERSEDED, formsheets, templates)
   const rootMatch = allFiles.find(
-    (f) => f.name.includes(sopId) && !f.name.match(/[-_](F-?\d{3}|T-?\d{3})/)
+    (f) => f.name.includes(sopId) && !f.name.match(/[-_](F-?\d{3}|T-?\d{3})/) && !f.name.includes("SUPERSEDED")
   );
   if (rootMatch) return rootMatch;
 
@@ -70,11 +70,12 @@ export async function findSopFile(drive, sopId) {
       includeItemsFromAllDrives: true,
       corpora: "allDrives",
     });
-    // Find the main SOP doc (not a formsheet F-XXX or template T-XXX)
+    // Find the main SOP doc (not a formsheet F-XXX or template T-XXX, not SUPERSEDED)
     const sopDoc = (subItems.data.files || []).find(
       (f) =>
         f.name.includes(sopId) &&
         !f.name.match(/[-_](F-?\d{3}|T-?\d{3})/) &&
+        !f.name.includes("SUPERSEDED") &&
         f.mimeType !== "application/vnd.google-apps.folder"
     );
     if (sopDoc) return sopDoc;
