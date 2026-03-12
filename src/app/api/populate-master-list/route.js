@@ -55,8 +55,8 @@ function qmsDocToRow(d) {
     "Quality (Q)",                                 // Classification
     "[Date + 3yr]",                                // Next Review
     d.sop === "-"                                  // Location in DMS
-      ? `/QMS/01_Documents/SOPs/${d.id}/`
-      : `/QMS/01_Documents/Forms/${d.sop}/`,
+      ? `DMS / QMH / ${d.id}`
+      : `DMS / QMH / ${d.sop}`,
   ];
 }
 

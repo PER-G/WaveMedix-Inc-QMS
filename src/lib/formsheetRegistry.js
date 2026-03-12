@@ -9,6 +9,7 @@ export const FORMSHEET_REGISTRY = [
   { id: "WM-SOP-003-F-002", name: "Design Review Minutes", sop: "WM-SOP-003", type: "docx" },
   { id: "WM-SOP-003-F-003", name: "Release Approval Form", sop: "WM-SOP-003", type: "docx" },
   { id: "WM-SOP-003-F-004", name: "User Requirements Specification", sop: "WM-SOP-003", type: "docx" },
+  { id: "WM-SOP-003-F-005", name: "Software Requirements Specification (SRS)", sop: "WM-SOP-003", type: "docx" },
   { id: "WM-SOP-004-F-002", name: "Risk Management Plan", sop: "WM-SOP-004", type: "docx" },
   { id: "WM-SOP-005-F-001", name: "Trending Report", sop: "WM-SOP-005", type: "docx" },
   { id: "WM-SOP-006-F-001", name: "Complaint / Adverse Event Form", sop: "WM-SOP-006", type: "docx" },

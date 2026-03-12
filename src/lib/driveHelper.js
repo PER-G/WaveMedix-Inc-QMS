@@ -21,7 +21,7 @@ function setCache(key, text) {
 }
 
 // ═══ Create authenticated Drive client ═══
-function getDriveClient(accessToken) {
+export function getDriveClient(accessToken) {
   const auth = new google.auth.OAuth2();
   auth.setCredentials({ access_token: accessToken });
   return google.drive({ version: "v3", auth });
@@ -29,7 +29,7 @@ function getDriveClient(accessToken) {
 
 // ═══ Find SOP document in Drive by SOP ID ═══
 // Searches for the main SOP document (not formsheets) matching the SOP ID pattern
-async function findSopFile(drive, sopId) {
+export async function findSopFile(drive, sopId) {
   // Search in the root QMS folder and subfolders
   const rootItems = await drive.files.list({
     q: `'${FOLDER_ID}' in parents and trashed = false`,
@@ -84,7 +84,7 @@ async function findSopFile(drive, sopId) {
 }
 
 // ═══ Export file content as text ═══
-async function exportFileAsText(drive, file) {
+export async function exportFileAsText(drive, file) {
   if (file.mimeType === "application/vnd.google-apps.document") {
     const res = await drive.files.export({
       fileId: file.id,
