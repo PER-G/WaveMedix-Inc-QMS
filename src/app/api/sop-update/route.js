@@ -456,8 +456,25 @@ export async function POST(request) {
 
     console.log(`[SOP-UPDATE] Starting update for ${sopId} → ${newVersion}`);
 
-    // Step 1: Find and read current SOP
-    const sopFile = await findSopFile(drive, sopId);
+    // Step 1: Find current SOP (include SUPERSEDED — Shared Drive renames may not stick)
+    const allFiles = await drive.files.list({
+      q: `'${FOLDER_ID}' in parents and trashed = false and name contains '${sopId}'`,
+      fields: "files(id,name,mimeType)",
+      pageSize: 50,
+      supportsAllDrives: true,
+      includeItemsFromAllDrives: true,
+      corpora: "allDrives",
+    });
+
+    // Find the SOP doc (not a formsheet F-XXX or template T-XXX, not a _LIVE_ doc)
+    const sopFile = (allFiles.data.files || []).find(
+      (f) =>
+        f.name.includes(sopId) &&
+        !f.name.match(/[-_](F-?\d{3}|T-?\d{3})/) &&
+        !f.name.includes("_LIVE_") &&
+        f.mimeType !== "application/vnd.google-apps.folder"
+    );
+
     if (!sopFile) {
       return Response.json({ error: `SOP file not found in Drive: ${sopId}` }, { status: 404 });
     }
@@ -490,24 +507,13 @@ export async function POST(request) {
     const doc = generateDocx(docxElements, sopId, newVersion);
     const buffer = await Packer.toBuffer(doc);
 
-    // Step 4: Determine new filename
-    const baseName = sopFile.name.replace(/\.docx$/i, "").replace(/_V\d+[._]\d+/i, "");
-    const newFileName = `${baseName}_${newVersion}.docx`;
+    // Step 4: Upload new version as Google Doc (directly openable in Drive)
+    const newDocName = `${sopId}_${sopName.replace(/\s+/g, "_")}_${newVersion}`;
 
-    // Step 5: Rename old file to _SUPERSEDED
-    const supersededName = sopFile.name.replace(/\.docx$/i, "_SUPERSEDED.docx");
-    await drive.files.update({
-      fileId: sopFile.id,
-      requestBody: { name: supersededName },
-      supportsAllDrives: true,
-    });
-    console.log(`[SOP-UPDATE] Renamed old: ${sopFile.name} → ${supersededName}`);
-
-    // Step 6: Upload new version to same folder (convert to Google Docs for Drive compatibility)
     const stream = Readable.from(buffer);
     const uploaded = await drive.files.create({
       requestBody: {
-        name: newFileName.replace(/\.docx$/, ""),
+        name: newDocName,
         parents: [FOLDER_ID],
         mimeType: "application/vnd.google-apps.document",
       },
@@ -519,12 +525,24 @@ export async function POST(request) {
       supportsAllDrives: true,
     });
 
+    // Step 5: Try to trash the old file (Shared Drive may restrict this)
+    try {
+      await drive.files.update({
+        fileId: sopFile.id,
+        requestBody: { trashed: true },
+        supportsAllDrives: true,
+      });
+      console.log(`[SOP-UPDATE] Trashed old: ${sopFile.name}`);
+    } catch (e) {
+      console.warn(`[SOP-UPDATE] Could not trash old file (Shared Drive restriction): ${e.message}`);
+    }
+
     console.log(`[SOP-UPDATE] Uploaded new: ${uploaded.data.name} (${uploaded.data.id})`);
 
     return Response.json({
       success: true,
       sopId,
-      oldFile: { id: sopFile.id, name: supersededName },
+      oldFile: { id: sopFile.id, name: sopFile.name },
       newFile: {
         id: uploaded.data.id,
         name: uploaded.data.name,
