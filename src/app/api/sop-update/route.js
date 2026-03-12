@@ -507,15 +507,14 @@ export async function POST(request) {
     const doc = generateDocx(docxElements, sopId, newVersion);
     const buffer = await Packer.toBuffer(doc);
 
-    // Step 4: Upload new version as Google Doc (directly openable in Drive)
-    const newDocName = `${sopId}_${sopName.replace(/\s+/g, "_")}_${newVersion}`;
+    // Step 4: Upload new version as .docx
+    const newDocName = `${sopId}_${sopName.replace(/\s+/g, "_")}_${newVersion}.docx`;
 
     const stream = Readable.from(buffer);
     const uploaded = await drive.files.create({
       requestBody: {
         name: newDocName,
         parents: [FOLDER_ID],
-        mimeType: "application/vnd.google-apps.document",
       },
       media: {
         mimeType: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
