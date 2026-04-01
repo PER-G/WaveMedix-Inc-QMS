@@ -382,7 +382,7 @@ export default function Dashboard({ session, onSignOut }) {
           {tab === "products" && <ProductsTab lang={lang} t={t} />}
 
           {/* Team */}
-          {tab === "team" && <TeamTab lang={lang} t={t} />}
+          {tab === "team" && <TeamTab session={session} lang={lang} t={t} />}
         </div>
 
         {/* Chat Sidebar */}
