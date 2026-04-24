@@ -3,15 +3,24 @@
 // This is the single source of truth for all formsheet templates.
 
 export const FORMSHEET_REGISTRY = [
-  // Document formsheets (docx)
+  // ─── Quality Manual formsheets ───
+  { id: "WM-QMS-001-F-001", name: "Function Matrix", sop: "WM-QMS-001", type: "docx" },
+  { id: "WM-QMS-001-F-002", name: "Organization Chart", sop: "WM-QMS-001", type: "docx" },
+
+  // ─── Document formsheets (docx) ───
   { id: "WM-SOP-001-F-001", name: "Document Change Request", sop: "WM-SOP-001", type: "docx" },
   { id: "WM-SOP-001-T-001", name: "SOP Template", sop: "WM-SOP-001", type: "docx" },
   { id: "WM-SOP-003-F-002", name: "Design Review Minutes", sop: "WM-SOP-003", type: "docx" },
   { id: "WM-SOP-003-F-003", name: "Release Approval Form", sop: "WM-SOP-003", type: "docx" },
   { id: "WM-SOP-003-F-004", name: "User Requirements Specification", sop: "WM-SOP-003", type: "docx" },
   { id: "WM-SOP-003-F-005", name: "Software Requirements Specification (SRS)", sop: "WM-SOP-003", type: "docx" },
+  { id: "WM-SOP-003-F-006", name: "Design Plan", sop: "WM-SOP-003", type: "docx" },
+  { id: "WM-SOP-003-F-007", name: "Algorithm Design Specification (ADS)", sop: "WM-SOP-003", type: "docx" },
+  { id: "WM-SOP-003-F-008", name: "Product Requirements Specification (PRS)", sop: "WM-SOP-003", type: "docx" },
   { id: "WM-SOP-004-F-002", name: "Risk Management Plan", sop: "WM-SOP-004", type: "docx" },
+  { id: "WM-SOP-004-F-003", name: "Risk Management Report", sop: "WM-SOP-004", type: "docx" },
   { id: "WM-SOP-005-F-001", name: "Trending Report", sop: "WM-SOP-005", type: "docx" },
+  { id: "WM-SOP-005-F-003", name: "Management Review Minutes", sop: "WM-SOP-005", type: "docx" },
   { id: "WM-SOP-006-F-001", name: "Complaint / Adverse Event Form", sop: "WM-SOP-006", type: "docx" },
   { id: "WM-SOP-007-F-001", name: "PMS Plan", sop: "WM-SOP-007", type: "docx" },
   { id: "WM-SOP-007-F-002", name: "PMS Report / PSUR", sop: "WM-SOP-007", type: "docx" },
@@ -23,13 +32,18 @@ export const FORMSHEET_REGISTRY = [
   { id: "WM-SOP-012-F-002", name: "Audit Report Template", sop: "WM-SOP-012", type: "docx" },
   { id: "WM-SOP-013-F-001", name: "IT Security Assessment", sop: "WM-SOP-013", type: "docx" },
   { id: "WM-SOP-013-F-002", name: "DMS Qualification Protocol", sop: "WM-SOP-013", type: "docx" },
+  { id: "WM-SOP-013-F-003", name: "Disaster Recovery Plan", sop: "WM-SOP-013", type: "docx" },
+  { id: "WM-SOP-014-F-001", name: "Training Matrix", sop: "WM-SOP-014", type: "docx" },
+  { id: "WM-SOP-014-F-002", name: "Training Log", sop: "WM-SOP-014", type: "docx" },
+  { id: "WM-SOP-014-F-003", name: "Training Record Form", sop: "WM-SOP-014", type: "docx" },
   { id: "WM-SOP-015-F-001", name: "CAPA Form", sop: "WM-SOP-015", type: "docx" },
   { id: "WM-SOP-016-F-001", name: "Retraining Request / Plan", sop: "WM-SOP-016", type: "docx" },
   { id: "WM-SOP-016-F-002", name: "Training Report", sop: "WM-SOP-016", type: "docx" },
   { id: "WM-SOP-017-F-002", name: "Data Quality Report", sop: "WM-SOP-017", type: "docx" },
   { id: "WM-SOP-018-F-001", name: "Engineering Change Request (ECR)", sop: "WM-SOP-018", type: "docx" },
   { id: "WM-SOP-019-F-001", name: "PCCP Change Record", sop: "WM-SOP-019", type: "docx" },
-  // Spreadsheet formsheets (xlsx)
+
+  // ─── Spreadsheet formsheets (xlsx) ───
   { id: "WM-SOP-001-F-002", name: "Document Master List", sop: "WM-SOP-001", type: "xlsx" },
   { id: "WM-SOP-002-F-001", name: "Record Retention Matrix", sop: "WM-SOP-002", type: "xlsx" },
   { id: "WM-SOP-003-F-001", name: "Design I/O Checklist", sop: "WM-SOP-003", type: "xlsx" },

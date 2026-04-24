@@ -59,7 +59,9 @@ export function matchFilesToSops(driveFiles) {
 
     const sopMatch = f.name.match(/^(WM-(?:SOP|QMH|QMS)-\d{3})/);
     if (sopMatch) {
+      // Normalize: QMH-xxx → QMS-xxx, and legacy QMS-002 → QMS-001 (QMS was renumbered)
       let key = sopMatch[1].replace("QMH", "QMS");
+      if (key === "WM-QMS-002") key = "WM-QMS-001";
       if (!map[key]) map[key] = { sop: null, forms: [], oldForms: [] };
 
       const formMatch = f.name.match(/[-_](F-?\d{3}|T-?\d{3})/);
@@ -83,6 +85,7 @@ export function matchFilesToSops(driveFiles) {
       const folderMatch = f.folder.match(/(WM-(?:SOP|QMH|QMS)-\d{3})/);
       if (folderMatch) {
         let key = folderMatch[1].replace("QMH", "QMS");
+        if (key === "WM-QMS-002") key = "WM-QMS-001";
         if (!map[key]) map[key] = { sop: null, forms: [], oldForms: [] };
         if (f.isOld) {
           map[key].oldForms.push(f);
@@ -251,7 +254,7 @@ export const TX = {
 
 // ═══ Static Data ═══
 export const SOPS = [
-  { id: "WM-QMS-002", alt: "WM-QMH-002", de: "Quality Manual", en: "Quality Manual" },
+  { id: "WM-QMS-001", alt: "WM-QMS-002", de: "Quality Manual", en: "Quality Manual" },
   { id: "WM-SOP-001", de: "Dokumentenlenkung", en: "Document Control" },
   { id: "WM-SOP-002", de: "Aufzeichnungslenkung", en: "Record Management" },
   { id: "WM-SOP-003", de: "AI-Agent Design & Entwicklung", en: "AI-Agent Design & Development" },
@@ -265,6 +268,7 @@ export const SOPS = [
   { id: "WM-SOP-011", de: "Software-Validierung", en: "Software Validation Testing" },
   { id: "WM-SOP-012", de: "Internes Auditprogramm", en: "Internal Audit Program" },
   { id: "WM-SOP-013", de: "IT-Sicherheit & Part 11", en: "IT Security & Part 11" },
+  { id: "WM-SOP-014", de: "Schulung & Kompetenzmanagement", en: "Training & Competence Management" },
   { id: "WM-SOP-015", de: "CAPA-Management", en: "CAPA Management" },
   { id: "WM-SOP-016", de: "Kontinuierliches AI-Training", en: "Continuous AI Training" },
   { id: "WM-SOP-017", de: "Datenmanagement & Hygiene", en: "Data Management & Hygiene" },

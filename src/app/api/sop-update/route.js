@@ -411,7 +411,7 @@ function generateDocx(children, sopId, version) {
 
 // ═══ SOP name lookup ═══
 const SOP_NAMES = {
-  "WM-QMS-002": "Quality Manual",
+  "WM-QMS-001": "Quality Manual",
   "WM-SOP-001": "Document Control",
   "WM-SOP-002": "Record Management",
   "WM-SOP-003": "AI-Agent Design & Development",
@@ -425,6 +425,7 @@ const SOP_NAMES = {
   "WM-SOP-011": "Software Validation Testing",
   "WM-SOP-012": "Internal Audit Program",
   "WM-SOP-013": "IT Security & Part 11",
+  "WM-SOP-014": "Training & Competence Management",
   "WM-SOP-015": "CAPA Management",
   "WM-SOP-016": "Continuous AI Training",
   "WM-SOP-017": "Data Management & Hygiene",

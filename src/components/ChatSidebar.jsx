@@ -73,7 +73,7 @@ export default function ChatSidebar({
     ];
     const hasAuditKeyword = auditKeywords.some((kw) => lower.match(new RegExp(kw)));
     if (!hasAuditKeyword) return null;
-    // Extract SOP IDs from the text (WM-SOP-003, WM-QMS-002, etc.)
+    // Extract SOP IDs from the text (WM-SOP-003, WM-QMS-001, etc.)
     const sopMatches = text.match(/WM[- ]?(?:QMS|SOP)[- ]?\d{3}/gi);
     if (sopMatches && sopMatches.length > 0) {
       // Normalize: ensure format is WM-SOP-001 (with dashes)

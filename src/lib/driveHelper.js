@@ -143,10 +143,10 @@ export async function fetchSopText(accessToken, sopId, maxChars = 4000) {
 // ═══ PUBLIC: Fetch all SOP texts (for rule extraction) ═══
 export async function fetchAllSopTexts(accessToken) {
   const SOP_IDS = [
-    "WM-QMS-002", "WM-SOP-001", "WM-SOP-002", "WM-SOP-003", "WM-SOP-004",
+    "WM-QMS-001", "WM-SOP-001", "WM-SOP-002", "WM-SOP-003", "WM-SOP-004",
     "WM-SOP-005", "WM-SOP-006", "WM-SOP-007", "WM-SOP-008", "WM-SOP-009",
-    "WM-SOP-010", "WM-SOP-011", "WM-SOP-012", "WM-SOP-013", "WM-SOP-015",
-    "WM-SOP-016", "WM-SOP-017", "WM-SOP-018", "WM-SOP-019",
+    "WM-SOP-010", "WM-SOP-011", "WM-SOP-012", "WM-SOP-013", "WM-SOP-014",
+    "WM-SOP-015", "WM-SOP-016", "WM-SOP-017", "WM-SOP-018", "WM-SOP-019",
   ];
 
   const results = {};

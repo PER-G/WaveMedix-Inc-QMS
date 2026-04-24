@@ -1,6 +1,6 @@
 [
   {
-    "id": "WM-QMS-002",
+    "id": "WM-QMS-001",
     "name": "Qualitätsmanagementsystem Standardarbeitsanweisung",
     "nameEn": "Quality Management System Standard Operating Procedure",
     "purpose": "Regelung der standardisierten Arbeitsabläufe und Qualitätssicherungsmaßnahmen im Qualitätsmanagementsystem zur Gewährleistung einheitlicher Prozesse.",
@@ -74,10 +74,14 @@
       "wm-sop-003"
     ],
     "formsheets": [
+      "WM-SOP-003-F-001",
       "WM-SOP-003-F-002",
       "WM-SOP-003-F-003",
       "WM-SOP-003-F-004",
-      "WM-SOP-003-F-001"
+      "WM-SOP-003-F-005",
+      "WM-SOP-003-F-006",
+      "WM-SOP-003-F-007",
+      "WM-SOP-003-F-008"
     ]
   },
   {
@@ -350,7 +354,36 @@
     ],
     "formsheets": [
       "WM-SOP-013-F-001",
-      "WM-SOP-013-F-002"
+      "WM-SOP-013-F-002",
+      "WM-SOP-013-F-003"
+    ]
+  },
+  {
+    "id": "WM-SOP-014",
+    "name": "Schulungs- und Kompetenzmanagement",
+    "nameEn": "Training & Competence Management",
+    "purpose": "Sicherstellung, dass alle Mitarbeitenden mit QMS-relevanten Tätigkeiten die erforderliche Kompetenz nachweisen, Schulungen vor Aufgabenausführung absolvieren und Trainingsnachweise gemäß ISO 13485 §6.2 und 21 CFR 820.25 dokumentiert und aufbewahrt werden.",
+    "keyRules": [
+      "Rollenspezifische Schulungspläne sind vor Übernahme QMS-relevanter Tätigkeiten zu absolvieren",
+      "Schulungseffektivität ist nachzuweisen (Test, Beobachtung oder dokumentierte Kompetenzerklärung)",
+      "Refresher-Schulungen werden bei SOP-Revisionen, nach Vorfällen und mindestens jährlich durchgeführt",
+      "Neue Mitarbeitende schließen Onboarding-Schulung innerhalb von 30 Tagen ab",
+      "Trainingsaufzeichnungen werden gemäß WM-SOP-002 aufbewahrt"
+    ],
+    "keywords": [
+      "Schulung",
+      "training",
+      "competence",
+      "Kompetenz",
+      "qualification",
+      "Qualifizierung",
+      "onboarding",
+      "refresher"
+    ],
+    "formsheets": [
+      "WM-SOP-014-F-001",
+      "WM-SOP-014-F-002",
+      "WM-SOP-014-F-003"
     ]
   },
   {
