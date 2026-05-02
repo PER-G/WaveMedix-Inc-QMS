@@ -4,11 +4,12 @@ import Anthropic from "@anthropic-ai/sdk";
 import { loadProjectContext } from "../../../lib/buildSystemPrompt";
 
 // ═══ Canonical SOP ordering ═══
+// Former WM-SOP-016 (Continuous AI Training) removed for ISO Phase 1; 017/018/019 renumbered down.
 const SOP_ORDER = [
   "WM-QMS-001", "WM-SOP-001", "WM-SOP-002", "WM-SOP-003", "WM-SOP-004",
   "WM-SOP-005", "WM-SOP-006", "WM-SOP-007", "WM-SOP-008", "WM-SOP-009",
   "WM-SOP-010", "WM-SOP-011", "WM-SOP-012", "WM-SOP-013", "WM-SOP-014",
-  "WM-SOP-015", "WM-SOP-016", "WM-SOP-017", "WM-SOP-018", "WM-SOP-019",
+  "WM-SOP-015", "WM-SOP-016", "WM-SOP-017", "WM-SOP-018",
 ];
 
 // Folders to skip during audit (case-insensitive partial match)

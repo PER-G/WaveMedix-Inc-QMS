@@ -413,32 +413,6 @@
   },
   {
     "id": "WM-SOP-016",
-    "name": "Dokumentenanalyse nicht möglich",
-    "nameEn": "Document analysis not possible",
-    "purpose": "Die bereitgestellte Datei enthält nur technische XML-Strukturdaten ohne lesbaren SOP-Inhalt.",
-    "keyRules": [
-      "Vollständiger SOP-Text erforderlich für Analyse",
-      "Lesbare Dokumentstruktur notwendig",
-      "Inhaltliche Informationen fehlen",
-      "Technische Metadaten allein nicht ausreichend"
-    ],
-    "keywords": [
-      "document",
-      "xml",
-      "structure",
-      "header",
-      "footer",
-      "word",
-      "format",
-      "technical"
-    ],
-    "formsheets": [
-      "WM-SOP-016-F-001",
-      "WM-SOP-016-F-002"
-    ]
-  },
-  {
-    "id": "WM-SOP-017",
     "name": "Standardarbeitsanweisung (nicht eindeutig identifizierbar aus korrupten Daten)",
     "nameEn": "Standard Operating Procedure (not clearly identifiable from corrupted data)",
     "purpose": "Die SOP-Details können aufgrund korrupter XML-Daten nicht eindeutig extrahiert werden. Das Dokument scheint technische Formatierungsinformationen zu enthalten.",
@@ -459,12 +433,12 @@
       "corrupted data"
     ],
     "formsheets": [
-      "WM-SOP-017-F-002",
-      "WM-SOP-017-F-001"
+      "WM-SOP-016-F-001",
+      "WM-SOP-016-F-002"
     ]
   },
   {
-    "id": "WM-SOP-018",
+    "id": "WM-SOP-017",
     "name": "Standardarbeitsanweisung für Warnungen und Maßnahmen",
     "nameEn": "Standard Operating Procedure for Warnings and Measures",
     "purpose": "Diese SOP regelt das systematische Verfahren zur Identifizierung, Bewertung und Umsetzung von Warnungen und korrigierenden Maßnahmen im Qualitätsmanagementsystem.",
@@ -486,12 +460,12 @@
       "Dokumentation"
     ],
     "formsheets": [
-      "WM-SOP-018-F-001",
-      "WM-SOP-018-F-002"
+      "WM-SOP-017-F-001",
+      "WM-SOP-017-F-002"
     ]
   },
   {
-    "id": "WM-SOP-019",
+    "id": "WM-SOP-018",
     "name": "Wartung und Instandhaltung medizinischer Geräte",
     "nameEn": "Maintenance and Servicing of Medical Devices",
     "purpose": "Regelung der systematischen Wartung und Instandhaltung medizinischer Geräte zur Gewährleistung der Gerätesicherheit und -funktionalität.",
@@ -513,8 +487,8 @@
       "servicing"
     ],
     "formsheets": [
-      "WM-SOP-019-F-001",
-      "WM-SOP-019-F-002"
+      "WM-SOP-018-F-001",
+      "WM-SOP-018-F-002"
     ]
   }
 ]

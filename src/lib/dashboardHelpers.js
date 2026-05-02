@@ -62,6 +62,10 @@ export function matchFilesToSops(driveFiles) {
       // Normalize: QMH-xxx → QMS-xxx, and legacy QMS-002 → QMS-001 (QMS was renumbered)
       let key = sopMatch[1].replace("QMH", "QMS");
       if (key === "WM-QMS-002") key = "WM-QMS-001";
+      // Legacy: former SOP-016 (Continuous AI Training) was removed; 017/018/019 renumbered down
+      if (key === "WM-SOP-017") key = "WM-SOP-016"; // Data Management & Hygiene
+      else if (key === "WM-SOP-018") key = "WM-SOP-017"; // Engineering Change Mgmt
+      else if (key === "WM-SOP-019") key = "WM-SOP-018"; // PCCP Management
       if (!map[key]) map[key] = { sop: null, forms: [], oldForms: [] };
 
       const formMatch = f.name.match(/[-_](F-?\d{3}|T-?\d{3})/);
@@ -86,6 +90,9 @@ export function matchFilesToSops(driveFiles) {
       if (folderMatch) {
         let key = folderMatch[1].replace("QMH", "QMS");
         if (key === "WM-QMS-002") key = "WM-QMS-001";
+        if (key === "WM-SOP-017") key = "WM-SOP-016";
+        else if (key === "WM-SOP-018") key = "WM-SOP-017";
+        else if (key === "WM-SOP-019") key = "WM-SOP-018";
         if (!map[key]) map[key] = { sop: null, forms: [], oldForms: [] };
         if (f.isOld) {
           map[key].oldForms.push(f);
@@ -253,6 +260,8 @@ export const TX = {
 };
 
 // ═══ Static Data ═══
+// Note: Former WM-SOP-016 (Continuous AI Training) was removed for ISO Phase 1.
+// SOPs 017/018/019 were renumbered down to 016/017/018.
 export const SOPS = [
   { id: "WM-QMS-001", alt: "WM-QMS-002", de: "Quality Manual", en: "Quality Manual" },
   { id: "WM-SOP-001", de: "Dokumentenlenkung", en: "Document Control" },
@@ -270,10 +279,9 @@ export const SOPS = [
   { id: "WM-SOP-013", de: "IT-Sicherheit & Part 11", en: "IT Security & Part 11" },
   { id: "WM-SOP-014", de: "Schulung & Kompetenzmanagement", en: "Training & Competence Management" },
   { id: "WM-SOP-015", de: "CAPA-Management", en: "CAPA Management" },
-  { id: "WM-SOP-016", de: "Kontinuierliches AI-Training", en: "Continuous AI Training" },
-  { id: "WM-SOP-017", de: "Datenmanagement & Hygiene", en: "Data Management & Hygiene" },
-  { id: "WM-SOP-018", de: "Engineering Change Mgmt", en: "Engineering Change Mgmt" },
-  { id: "WM-SOP-019", de: "PCCP-Management", en: "PCCP Management" },
+  { id: "WM-SOP-016", alt: "WM-SOP-017", de: "Datenmanagement & Hygiene", en: "Data Management & Hygiene" },
+  { id: "WM-SOP-017", alt: "WM-SOP-018", de: "Engineering Change Mgmt", en: "Engineering Change Mgmt" },
+  { id: "WM-SOP-018", alt: "WM-SOP-019", de: "PCCP-Management", en: "PCCP Management" },
 ];
 
 export const REGS = ["ISO 13485:2016", "FDA 21 CFR 820", "FDA 21 CFR Part 11", "EU MDR 2017/745", "IEC 62304:2006+A1", "ISO 14971:2019", "FDA PCCP Guidance", "IMDRF SaMD"];

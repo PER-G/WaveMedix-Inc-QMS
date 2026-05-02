@@ -75,7 +75,7 @@ const LIVE_DOCS = [
   { id: "WM-SOP-006-F-002_LIVE", name: "Complaint Register (LIVE)", type: "Live Register", fileType: "Google Sheets", sop: "WM-SOP-006", area: "Operations", category: "CAPA & Complaints" },
   { id: "WM-SOP-011-F-003_LIVE", name: "Traceability Matrix (LIVE)", type: "Live Register", fileType: "Google Sheets", sop: "WM-SOP-011", area: "Operations", category: "Validation" },
   { id: "WM-SOP-015-F-002_LIVE", name: "CAPA Register (LIVE)", type: "Live Register", fileType: "Google Sheets", sop: "WM-SOP-015", area: "Operations", category: "CAPA & Complaints" },
-  { id: "WM-SOP-018-F-002_LIVE", name: "Change Register (LIVE)", type: "Live Register", fileType: "Google Sheets", sop: "WM-SOP-018", area: "Operations", category: "Change Management" },
+  { id: "WM-SOP-017-F-002_LIVE", name: "Change Register (LIVE)", type: "Live Register", fileType: "Google Sheets", sop: "WM-SOP-017", area: "Operations", category: "Change Management" },
 ];
 
 function opsDocToRow(d) {

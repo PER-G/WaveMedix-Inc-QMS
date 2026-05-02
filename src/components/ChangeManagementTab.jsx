@@ -9,7 +9,7 @@ export default function ChangeManagementTab({ session, lang, t }) {
   const [initializing, setInitializing] = useState(false);
   const [error, setError] = useState(null);
 
-  const formsheetId = "WM-SOP-018-F-002";
+  const formsheetId = "WM-SOP-017-F-002";
   const formsheetName = "Change Register";
 
   useEffect(() => {
@@ -124,8 +124,8 @@ export default function ChangeManagementTab({ session, lang, t }) {
             </p>
             <p style={{ fontSize: 12, color: "#94a3b8", marginBottom: 16 }}>
               {lang === "de"
-                ? "Erstelle ein Live-Dokument aus dem Formblatt-Template WM-SOP-018-F-002."
-                : "Create a live document from the formsheet template WM-SOP-018-F-002."}
+                ? "Erstelle ein Live-Dokument aus dem Formblatt-Template WM-SOP-017-F-002."
+                : "Create a live document from the formsheet template WM-SOP-017-F-002."}
             </p>
             <button
               onClick={initializeLiveDoc}

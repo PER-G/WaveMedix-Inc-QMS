@@ -410,6 +410,7 @@ function generateDocx(children, sopId, version) {
 }
 
 // ═══ SOP name lookup ═══
+// Former WM-SOP-016 (Continuous AI Training) removed for ISO Phase 1; 017/018/019 renumbered down.
 const SOP_NAMES = {
   "WM-QMS-001": "Quality Manual",
   "WM-SOP-001": "Document Control",
@@ -427,10 +428,9 @@ const SOP_NAMES = {
   "WM-SOP-013": "IT Security & Part 11",
   "WM-SOP-014": "Training & Competence Management",
   "WM-SOP-015": "CAPA Management",
-  "WM-SOP-016": "Continuous AI Training",
-  "WM-SOP-017": "Data Management & Hygiene",
-  "WM-SOP-018": "Engineering Change Management",
-  "WM-SOP-019": "PCCP Management",
+  "WM-SOP-016": "Data Management & Hygiene",
+  "WM-SOP-017": "Engineering Change Management",
+  "WM-SOP-018": "PCCP Management",
 };
 
 // ═══ POST /api/sop-update — Update a specific SOP ═══

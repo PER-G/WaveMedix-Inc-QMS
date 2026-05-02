@@ -252,7 +252,7 @@ Beispiele für Formsheet-Mapping:
 - IQ/OQ/PQ, Qualifizierung → WM-SOP-011-F-005 oder WM-SOP-013-F-002
 - Validierungsplan → WM-SOP-011-F-001
 - Risikoanalyse, FMEA → WM-SOP-004-F-001 oder WM-SOP-004-F-002
-- Change Request → WM-SOP-018-F-001 oder WM-SOP-001-F-001
+- Change Request → WM-SOP-017-F-001 oder WM-SOP-001-F-001
 - Audit → WM-SOP-012-F-002
 - Security Assessment → WM-SOP-013-F-001
 

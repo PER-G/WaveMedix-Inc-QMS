@@ -10,6 +10,7 @@ export const FORMSHEET_REGISTRY = [
   // ─── Document formsheets (docx) ───
   { id: "WM-SOP-001-F-001", name: "Document Change Request", sop: "WM-SOP-001", type: "docx" },
   { id: "WM-SOP-001-T-001", name: "SOP Template", sop: "WM-SOP-001", type: "docx" },
+  { id: "WM-SOP-001-WI-001", name: "Approver Work Instruction (Management Approval Protocol)", sop: "WM-SOP-001", type: "docx" },
   { id: "WM-SOP-003-F-002", name: "Design Review Minutes", sop: "WM-SOP-003", type: "docx" },
   { id: "WM-SOP-003-F-003", name: "Release Approval Form", sop: "WM-SOP-003", type: "docx" },
   { id: "WM-SOP-003-F-004", name: "User Requirements Specification", sop: "WM-SOP-003", type: "docx" },
@@ -37,11 +38,13 @@ export const FORMSHEET_REGISTRY = [
   { id: "WM-SOP-014-F-002", name: "Training Log", sop: "WM-SOP-014", type: "docx" },
   { id: "WM-SOP-014-F-003", name: "Training Record Form", sop: "WM-SOP-014", type: "docx" },
   { id: "WM-SOP-015-F-001", name: "CAPA Form", sop: "WM-SOP-015", type: "docx" },
-  { id: "WM-SOP-016-F-001", name: "Retraining Request / Plan", sop: "WM-SOP-016", type: "docx" },
-  { id: "WM-SOP-016-F-002", name: "Training Report", sop: "WM-SOP-016", type: "docx" },
-  { id: "WM-SOP-017-F-002", name: "Data Quality Report", sop: "WM-SOP-017", type: "docx" },
-  { id: "WM-SOP-018-F-001", name: "Engineering Change Request (ECR)", sop: "WM-SOP-018", type: "docx" },
-  { id: "WM-SOP-019-F-001", name: "PCCP Change Record", sop: "WM-SOP-019", type: "docx" },
+  // Renumbered after removal of former WM-SOP-016 Continuous AI Training:
+  // formerly WM-SOP-017-F-002 → WM-SOP-016-F-002
+  { id: "WM-SOP-016-F-002", name: "Data Quality Report", sop: "WM-SOP-016", type: "docx" },
+  // formerly WM-SOP-018-F-001 → WM-SOP-017-F-001
+  { id: "WM-SOP-017-F-001", name: "Engineering Change Request (ECR)", sop: "WM-SOP-017", type: "docx" },
+  // formerly WM-SOP-019-F-001 → WM-SOP-018-F-001
+  { id: "WM-SOP-018-F-001", name: "PCCP Change Record", sop: "WM-SOP-018", type: "docx" },
 
   // ─── Spreadsheet formsheets (xlsx) ───
   { id: "WM-SOP-001-F-002", name: "Document Master List", sop: "WM-SOP-001", type: "xlsx" },
@@ -56,9 +59,13 @@ export const FORMSHEET_REGISTRY = [
   { id: "WM-SOP-011-F-003", name: "Traceability Matrix", sop: "WM-SOP-011", type: "xlsx" },
   { id: "WM-SOP-012-F-001", name: "Audit Schedule & Finding Tracker", sop: "WM-SOP-012", type: "xlsx" },
   { id: "WM-SOP-015-F-002", name: "CAPA Register", sop: "WM-SOP-015", type: "xlsx" },
-  { id: "WM-SOP-017-F-001", name: "Data Source Registry", sop: "WM-SOP-017", type: "xlsx" },
-  { id: "WM-SOP-018-F-002", name: "Change Register", sop: "WM-SOP-018", type: "xlsx" },
-  { id: "WM-SOP-019-F-002", name: "PCCP Master Record", sop: "WM-SOP-019", type: "xlsx" },
+  // Renumbered after removal of former WM-SOP-016 Continuous AI Training:
+  // formerly WM-SOP-017-F-001 → WM-SOP-016-F-001
+  { id: "WM-SOP-016-F-001", name: "Data Source Registry", sop: "WM-SOP-016", type: "xlsx" },
+  // formerly WM-SOP-018-F-002 → WM-SOP-017-F-002
+  { id: "WM-SOP-017-F-002", name: "Change Register", sop: "WM-SOP-017", type: "xlsx" },
+  // formerly WM-SOP-019-F-002 → WM-SOP-018-F-002
+  { id: "WM-SOP-018-F-002", name: "PCCP Master Record", sop: "WM-SOP-018", type: "xlsx" },
 ];
 
 // Helper: get registry list formatted for prompts
