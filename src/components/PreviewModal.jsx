@@ -11,7 +11,7 @@ export default function PreviewModal({ file, lang, onClose, onOpenInDrive }) {
           <Ic name="preview" size={18} color="#028090" />
           <span style={{ fontSize: 14, fontWeight: 600, flex: 1 }}>{cleanFormName(file.name)}</span>
           {extractVersion(file.name) && <span style={{ fontSize: 11, background: "#ecfdf5", padding: "2px 8px", borderRadius: 4, color: "#059669", fontWeight: 600 }}>V{extractVersion(file.name)}</span>}
-          <span style={{ fontSize: 11, color: "#94a3b8" }}>{lang === "de" ? "Vorschau" : "Preview"} (Read-Only)</span>
+          <span style={{ fontSize: 11, color: "#94a3b8" }}>{lang === "de" ? "Vorschau" : "Preview"}{file.mimeType === "application/vnd.google-apps.spreadsheet" ? "" : " (Read-Only)"}</span>
           <button onClick={() => onOpenInDrive(file)} style={{ border: "1px solid #e2e8f0", background: "#fff", borderRadius: 6, padding: "5px 12px", fontSize: 11, cursor: "pointer", color: "#028090", fontWeight: 600, display: "flex", alignItems: "center", gap: 4 }}>
             <Ic name="open" size={12} color="#028090" /> {lang === "de" ? "In Drive \u00F6ffnen" : "Open in Drive"}
           </button>
@@ -23,7 +23,8 @@ export default function PreviewModal({ file, lang, onClose, onOpenInDrive }) {
           src={getPreviewUrl(file)}
           style={{ flex: 1, border: "none", width: "100%" }}
           title="Document Preview"
-          sandbox="allow-scripts allow-same-origin allow-popups"
+          sandbox="allow-scripts allow-same-origin allow-popups allow-forms allow-popups-to-escape-sandbox allow-downloads"
+          referrerPolicy="no-referrer-when-downgrade"
         />
       </div>
     </div>

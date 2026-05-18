@@ -28,10 +28,14 @@ export function getPreviewUrl(file) {
     return `https://docs.google.com/document/d/${file.id}/preview`;
   }
   if (file.mimeType === "application/vnd.google-apps.spreadsheet") {
-    return `https://docs.google.com/spreadsheets/d/${file.id}/preview`;
+    // /preview frequently fails for sheets in Shared Drives or freshly created
+    // empty registers ("Google Docs encountered an error"). The embedded editor
+    // URL is the most reliable way to render a Google Sheet inside an iframe.
+    // rm=minimal hides the menu bar so it still looks like a preview.
+    return `https://docs.google.com/spreadsheets/d/${file.id}/edit?usp=sharing&rm=minimal&embedded=true`;
   }
   if (file.mimeType === "application/vnd.google-apps.presentation") {
-    return `https://docs.google.com/presentation/d/${file.id}/preview`;
+    return `https://docs.google.com/presentation/d/${file.id}/embed?start=false&loop=false`;
   }
   return `https://drive.google.com/file/d/${file.id}/preview`;
 }
