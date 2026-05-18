@@ -48,58 +48,128 @@ export function fmtDate(iso) {
   return new Date(iso).toLocaleDateString("de-DE", { year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" });
 }
 
+// ═══ File-type classifiers ═══
+export function isSignatureDoc(name) {
+  return /\+?Formsheets[\s_]+Signature[\s_]+Document/i.test(name);
+}
+
+export function isLiveDoc(name) {
+  // Matches "_LIVE_" anywhere, or trailing "_LIVE" before extension / end
+  return /_LIVE(?:_|\.|$)/i.test(name);
+}
+
+export function isWorkInstruction(name) {
+  return /[-_]WI-?\d{1,3}/i.test(name);
+}
+
+export function isCoverSheet(name) {
+  return /_Cover[_\s]Sheet/i.test(name);
+}
+
+export function isFormsheetTemplate(name) {
+  return /[-_](F-?\d{1,3}|T-?\d{1,3})/i.test(name) && !isLiveDoc(name);
+}
+
+// Prefer editable .docx over rendered .pdf for the same document
+function isEditable(file) {
+  return /\.docx$/i.test(file.name)
+    || file.mimeType === "application/vnd.google-apps.document"
+    || file.mimeType === "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
+}
+
+function preferAsSop(curr, next) {
+  // returns true if `next` is the better SOP candidate
+  if (!curr) return true;
+  const curEdit = isEditable(curr);
+  const nextEdit = isEditable(next);
+  if (nextEdit && !curEdit) return true;
+  if (!nextEdit && curEdit) return false;
+  return (next.modifiedTime || "") > (curr.modifiedTime || "");
+}
+
+function normalizeSopKey(rawKey) {
+  let key = rawKey.replace("QMH", "QMS");
+  if (key === "WM-QMS-002") key = "WM-QMS-001";
+  // Legacy: former SOP-016 (Continuous AI Training) was removed; 017/018/019 renumbered down
+  if (key === "WM-SOP-017") key = "WM-SOP-016";
+  else if (key === "WM-SOP-018") key = "WM-SOP-017";
+  else if (key === "WM-SOP-019") key = "WM-SOP-018";
+  return key;
+}
+
+function ensureEntry(map, key) {
+  if (!map[key]) {
+    map[key] = {
+      sop: null,
+      signatureDoc: null,   // combined-PDF for signing
+      liveDocs: [],         // _LIVE_ registers (Google Sheets)
+      workInstructions: [], // WI-NNN files
+      forms: [],            // form templates (F-/T-NNN, non-LIVE)
+      oldForms: [],         // archived versions
+    };
+  }
+  return map[key];
+}
+
 export function matchFilesToSops(driveFiles) {
   const map = {};
 
   driveFiles.forEach((f) => {
-    // Skip ENTWURF (draft) files — they belong in the Entwürfe folder, not the SOP tree
-    if (f.name && f.name.includes("ENTWURF")) return;
-    // Skip files from the Entwürfe folder
+    if (!f.name) return;
+    // Skip drafts
+    if (f.name.includes("ENTWURF")) return;
     if (f.folder && (f.folder === "Entwürfe" || f.folder.includes("Entwürfe"))) return;
+    // Skip Cover Sheets — they live in a separate folder and are not part of QMS records
+    if (isCoverSheet(f.name)) return;
 
+    // Derive SOP key from name or folder
+    let key = null;
     const sopMatch = f.name.match(/^(WM-(?:SOP|QMH|QMS)-\d{3})/);
     if (sopMatch) {
-      // Normalize: QMH-xxx → QMS-xxx, and legacy QMS-002 → QMS-001 (QMS was renumbered)
-      let key = sopMatch[1].replace("QMH", "QMS");
-      if (key === "WM-QMS-002") key = "WM-QMS-001";
-      // Legacy: former SOP-016 (Continuous AI Training) was removed; 017/018/019 renumbered down
-      if (key === "WM-SOP-017") key = "WM-SOP-016"; // Data Management & Hygiene
-      else if (key === "WM-SOP-018") key = "WM-SOP-017"; // Engineering Change Mgmt
-      else if (key === "WM-SOP-019") key = "WM-SOP-018"; // PCCP Management
-      if (!map[key]) map[key] = { sop: null, forms: [], oldForms: [] };
+      key = normalizeSopKey(sopMatch[1]);
+    } else if (f.folder && f.folder !== "root") {
+      const folderMatch = f.folder.match(/(WM-(?:SOP|QMH|QMS)-\d{3})/);
+      if (folderMatch) key = normalizeSopKey(folderMatch[1]);
+    }
+    if (!key) return;
 
-      const formMatch = f.name.match(/[-_](F-?\d{3}|T-?\d{3})/);
-      const isRootSop = f.folder === "root" && !formMatch;
+    const entry = ensureEntry(map, key);
 
-      if (isRootSop) {
-        if (f.isOld) {
-          map[key].oldForms.push(f);
-        } else if (!map[key].sop || f.modifiedTime > map[key].sop.modifiedTime) {
-          map[key].sop = f;
-        }
-      } else if (f.isOld) {
-        map[key].oldForms.push(f);
-      } else {
-        map[key].forms.push(f);
+    // Old/archived → all go to oldForms regardless of type
+    if (f.isOld) {
+      entry.oldForms.push(f);
+      return;
+    }
+
+    // Signature combined PDF (covers SOP + formsheets at V01.00)
+    if (isSignatureDoc(f.name)) {
+      if (!entry.signatureDoc || (f.modifiedTime || "") > (entry.signatureDoc.modifiedTime || "")) {
+        entry.signatureDoc = f;
       }
       return;
     }
 
-    if (f.folder && f.folder !== "root") {
-      const folderMatch = f.folder.match(/(WM-(?:SOP|QMH|QMS)-\d{3})/);
-      if (folderMatch) {
-        let key = folderMatch[1].replace("QMH", "QMS");
-        if (key === "WM-QMS-002") key = "WM-QMS-001";
-        if (key === "WM-SOP-017") key = "WM-SOP-016";
-        else if (key === "WM-SOP-018") key = "WM-SOP-017";
-        else if (key === "WM-SOP-019") key = "WM-SOP-018";
-        if (!map[key]) map[key] = { sop: null, forms: [], oldForms: [] };
-        if (f.isOld) {
-          map[key].oldForms.push(f);
-        } else {
-          map[key].forms.push(f);
-        }
-      }
+    // Live register (continuously updated Google Sheet)
+    if (isLiveDoc(f.name)) {
+      entry.liveDocs.push(f);
+      return;
+    }
+
+    // Work Instruction (WI-NNN) — separate from main SOP and from form templates
+    if (isWorkInstruction(f.name)) {
+      entry.workInstructions.push(f);
+      return;
+    }
+
+    // Form template (F-NNN or T-NNN)
+    if (isFormsheetTemplate(f.name)) {
+      entry.forms.push(f);
+      return;
+    }
+
+    // Otherwise: this is a main SOP file (.docx or .pdf at root)
+    if (preferAsSop(entry.sop, f)) {
+      entry.sop = f;
     }
   });
 

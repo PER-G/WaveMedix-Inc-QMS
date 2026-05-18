@@ -27,10 +27,46 @@ export function getDriveClient(accessToken) {
   return google.drive({ version: "v3", auth });
 }
 
+// ═══ Helpers: classify candidate files when searching for a SOP source ═══
+function isExcludedSopFile(name) {
+  if (!name) return true;
+  // formsheets / templates / work instructions
+  if (/[-_](F-?\d{1,3}|T-?\d{1,3}|WI-?\d{1,3})/i.test(name)) return true;
+  // combined Signature PDF
+  if (/\+?Formsheets[\s_]+Signature[\s_]+Document/i.test(name)) return true;
+  // cover sheet
+  if (/_Cover[_\s]Sheet/i.test(name)) return true;
+  // live registers
+  if (/_LIVE(?:_|\.|$)/i.test(name)) return true;
+  // archived
+  if (/SUPERSEDED/i.test(name)) return true;
+  return false;
+}
+
+function sopFilePreference(f) {
+  // Higher = better source for AI text extraction.
+  //  Google Doc > .docx > Google Sheet > .pdf > other
+  const m = f.mimeType || "";
+  const n = f.name || "";
+  if (m === "application/vnd.google-apps.document") return 5;
+  if (/\.docx$/i.test(n)) return 4;
+  if (m === "application/vnd.google-apps.spreadsheet") return 3;
+  if (/\.pdf$/i.test(n)) return 2;
+  return 1;
+}
+
+function pickBestSopFile(candidates) {
+  if (!candidates || candidates.length === 0) return null;
+  return candidates
+    .slice()
+    .sort((a, b) => sopFilePreference(b) - sopFilePreference(a))[0];
+}
+
 // ═══ Find SOP document in Drive by SOP ID ═══
-// Searches for the main SOP document (not formsheets) matching the SOP ID pattern
+// Searches for the main SOP document (not formsheets, not signature PDFs, not LIVE files,
+// not work instructions, not cover sheets) matching the SOP ID pattern.
+// Prefers editable formats (Google Doc / .docx) over PDFs for clean text extraction.
 export async function findSopFile(drive, sopId) {
-  // Search in the root QMS folder and subfolders
   const rootItems = await drive.files.list({
     q: `'${FOLDER_ID}' in parents and trashed = false`,
     fields: "files(id,name,mimeType)",
@@ -53,13 +89,14 @@ export async function findSopFile(drive, sopId) {
     }
   }
 
-  // Check root-level files first (skip SUPERSEDED, formsheets, templates)
-  const rootMatch = allFiles.find(
-    (f) => f.name.includes(sopId) && !f.name.match(/[-_](F-?\d{3}|T-?\d{3})/) && !f.name.includes("SUPERSEDED")
+  // 1. Root-level matches — collect all valid candidates then pick best by format preference
+  const rootCandidates = allFiles.filter(
+    (f) => f.name.includes(sopId) && !isExcludedSopFile(f.name)
   );
+  const rootMatch = pickBestSopFile(rootCandidates);
   if (rootMatch) return rootMatch;
 
-  // Search in SOP subfolders
+  // 2. SOP-specific subfolders
   for (const folder of allFolders) {
     if (!folder.name.includes(sopId)) continue;
     const subItems = await drive.files.list({
@@ -70,14 +107,13 @@ export async function findSopFile(drive, sopId) {
       includeItemsFromAllDrives: true,
       corpora: "allDrives",
     });
-    // Find the main SOP doc (not a formsheet F-XXX or template T-XXX, not SUPERSEDED)
-    const sopDoc = (subItems.data.files || []).find(
+    const subCandidates = (subItems.data.files || []).filter(
       (f) =>
         f.name.includes(sopId) &&
-        !f.name.match(/[-_](F-?\d{3}|T-?\d{3})/) &&
-        !f.name.includes("SUPERSEDED") &&
+        !isExcludedSopFile(f.name) &&
         f.mimeType !== "application/vnd.google-apps.folder"
     );
+    const sopDoc = pickBestSopFile(subCandidates);
     if (sopDoc) return sopDoc;
   }
 
@@ -100,7 +136,58 @@ export async function exportFileAsText(drive, file) {
     });
     return typeof res.data === "string" ? res.data : String(res.data);
   }
-  // Regular file
+  // .docx — upload-convert path: copy to Google Doc, export as text, then delete the copy
+  if (/\.docx$/i.test(file.name) ||
+      file.mimeType === "application/vnd.openxmlformats-officedocument.wordprocessingml.document") {
+    let copyId = null;
+    try {
+      const copy = await drive.files.copy({
+        fileId: file.id,
+        requestBody: {
+          name: `__tmp_text_extract_${file.id}`,
+          mimeType: "application/vnd.google-apps.document",
+        },
+        supportsAllDrives: true,
+        fields: "id",
+      });
+      copyId = copy.data.id;
+      const res = await drive.files.export({ fileId: copyId, mimeType: "text/plain" });
+      return typeof res.data === "string" ? res.data : String(res.data);
+    } catch (e) {
+      console.warn(`[DRIVE] docx text-extract failed for ${file.name}: ${e.message}`);
+      return null;
+    } finally {
+      if (copyId) {
+        try { await drive.files.delete({ fileId: copyId, supportsAllDrives: true }); } catch {}
+      }
+    }
+  }
+  // .pdf — let Google try OCR-style text extraction by converting to Google Doc
+  if (/\.pdf$/i.test(file.name) || file.mimeType === "application/pdf") {
+    let copyId = null;
+    try {
+      const copy = await drive.files.copy({
+        fileId: file.id,
+        requestBody: {
+          name: `__tmp_text_extract_${file.id}`,
+          mimeType: "application/vnd.google-apps.document",
+        },
+        supportsAllDrives: true,
+        fields: "id",
+      });
+      copyId = copy.data.id;
+      const res = await drive.files.export({ fileId: copyId, mimeType: "text/plain" });
+      return typeof res.data === "string" ? res.data : String(res.data);
+    } catch (e) {
+      console.warn(`[DRIVE] pdf text-extract failed for ${file.name}: ${e.message}`);
+      return null;
+    } finally {
+      if (copyId) {
+        try { await drive.files.delete({ fileId: copyId, supportsAllDrives: true }); } catch {}
+      }
+    }
+  }
+  // Other binary types — try raw text fetch (rarely useful)
   try {
     const res = await drive.files.get(
       { fileId: file.id, alt: "media" },

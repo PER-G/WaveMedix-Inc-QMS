@@ -432,6 +432,24 @@ export default function ChatSidebar({
       <div style={{ padding: "12px 16px", borderBottom: "1px solid #e2e8f0", display: "flex", alignItems: "center", gap: 8 }}>
         <Ic name="bot" size={16} color="#028090" />
         <span style={{ fontSize: 13, fontWeight: 600, flex: 1 }}>Claude AI Assistant</span>
+        <button
+          onClick={() => {
+            if (sopRulesLoading) return;
+            if (!window.confirm(lang === "de"
+              ? "SOP-Regeln neu aus Google Drive extrahieren? Das kann ein paar Minuten dauern."
+              : "Re-extract SOP rules from Google Drive? This may take a few minutes.")) return;
+            setSopRulesLoading(true);
+            fetch("/api/sop-rules", { method: "POST", headers: { "x-access-token": session?.accessToken || "" } })
+              .then((r) => r.json())
+              .then((d) => { setSopRulesLoaded(d.count > 0); setSopRulesLoading(false); })
+              .catch(() => setSopRulesLoading(false));
+          }}
+          disabled={sopRulesLoading}
+          title={lang === "de" ? "SOP-Wissen neu aus Drive laden" : "Reload SOP knowledge from Drive"}
+          style={{ border: "none", background: sopRulesLoading ? "#fef3c7" : "#ecfdf5", cursor: sopRulesLoading ? "wait" : "pointer", padding: "3px 8px", borderRadius: 6, fontSize: 10, color: sopRulesLoading ? "#92400e" : "#059669", fontWeight: 600, display: "flex", alignItems: "center", gap: 4 }}
+        >
+          {sopRulesLoading ? (lang === "de" ? "Lade..." : "Loading...") : (lang === "de" ? "↻ SOPs" : "↻ SOPs")}
+        </button>
         <button onClick={() => setChatOpen(false)} style={{ border: "none", background: "none", cursor: "pointer" }}><Ic name="x" size={14} color="#94a3b8" /></button>
       </div>
 

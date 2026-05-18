@@ -30,8 +30,10 @@ export default function SopExplorer({ files, fileMap, loading, lang, t, onPrevie
           {loading && <div style={{ padding: 20, textAlign: "center", color: "#94a3b8", fontSize: 12 }}>{t.loading}</div>}
 
           {filteredSops.map((sop) => {
-            const fm = fileMap[sop.id] || { sop: null, forms: [], oldForms: [] };
-            const hasFiles = fm.sop || fm.forms.length > 0;
+            const fm = fileMap[sop.id] || { sop: null, signatureDoc: null, liveDocs: [], workInstructions: [], forms: [], oldForms: [] };
+            const liveCount = (fm.liveDocs || []).length;
+            const wiCount = (fm.workInstructions || []).length;
+            const hasFiles = fm.sop || (fm.forms && fm.forms.length > 0) || liveCount > 0 || wiCount > 0 || fm.signatureDoc;
             const isExp = expanded[sop.id];
             const isOldExp = oldExpanded[sop.id];
             const sopVersion = fm.sop ? extractVersion(fm.sop.name) : null;
@@ -67,6 +69,57 @@ export default function SopExplorer({ files, fileMap, loading, lang, t, onPrevie
                         <button onClick={(e) => { e.stopPropagation(); onPreview(fm.sop); }} style={{ border: "none", background: "#eff6ff", borderRadius: 3, padding: "1px 6px", fontSize: 10, cursor: "pointer", color: "#3b82f6" }}><Ic name="eye" size={10} color="#3b82f6" /></button>
                         <button onClick={(e) => { e.stopPropagation(); onOpenInDrive(fm.sop); }} style={{ border: "none", background: "#f1f5f9", borderRadius: 3, padding: "1px 6px", fontSize: 10, cursor: "pointer", color: "#028090" }}>{t.open}</button>
                       </div>
+                    )}
+
+                    {/* Signature combined PDF (V01.00 signature scope) */}
+                    {fm.signatureDoc && (
+                      <div style={{ display: "flex", alignItems: "center", gap: 6, padding: "5px 8px", fontSize: 11, borderRadius: 4, cursor: "pointer", background: selected?.id === fm.signatureDoc.id ? "#fef3c7" : "#fffbeb", marginBottom: 2, border: "1px solid #fde68a" }} onClick={() => setSelected(fm.signatureDoc)}>
+                        <Ic name="signature" size={12} color="#d97706" />
+                        <span style={{ flex: 1, fontWeight: 600, color: "#92400e" }}>{lang === "de" ? "Signature Bundle" : "Signature Bundle"}</span>
+                        <span style={{ fontSize: 9, color: "#d97706", fontWeight: 600 }}>V01.00 + Formsheets</span>
+                        <button onClick={(e) => { e.stopPropagation(); onPreview(fm.signatureDoc); }} style={{ border: "none", background: "#fef3c7", borderRadius: 3, padding: "1px 6px", fontSize: 10, cursor: "pointer", color: "#d97706" }}><Ic name="eye" size={10} color="#d97706" /></button>
+                        <button onClick={(e) => { e.stopPropagation(); onOpenInDrive(fm.signatureDoc); }} style={{ border: "none", background: "#fffbeb", borderRadius: 3, padding: "1px 6px", fontSize: 10, cursor: "pointer", color: "#d97706" }}>{t.open}</button>
+                      </div>
+                    )}
+
+                    {/* LIVE documents (continuously-updated registers) */}
+                    {liveCount > 0 && (
+                      <>
+                        <div style={{ padding: "4px 0 2px 0", fontSize: 10, fontWeight: 600, color: "#059669", textTransform: "uppercase", letterSpacing: 0.5, display: "flex", alignItems: "center", gap: 4 }}>
+                          <Ic name="zap" size={10} color="#10B981" />
+                          <span>{lang === "de" ? "Live-Dokumente" : "Live Documents"} ({liveCount})</span>
+                        </div>
+                        {(fm.liveDocs || []).map((f) => (
+                          <div key={f.id} style={{ display: "flex", alignItems: "center", gap: 6, padding: "4px 8px", fontSize: 11, borderRadius: 4, cursor: "pointer", background: selected?.id === f.id ? "#ecfdf5" : "#f0fdf4", marginBottom: 2, border: "1px solid #bbf7d0" }} onClick={() => setSelected(f)}>
+                            <Ic name="table" size={12} color="#059669" />
+                            <span style={{ flex: 1, color: "#065f46", fontWeight: 500 }}>{cleanFormName(f.name).replace(/\s*LIVE\s*/i, "").trim() || "LIVE"}</span>
+                            <span style={{ fontSize: 9, color: "#10B981", fontWeight: 700 }}>LIVE</span>
+                            <button onClick={(e) => { e.stopPropagation(); onPreview(f); }} style={{ border: "none", background: "#ecfdf5", borderRadius: 3, padding: "1px 6px", fontSize: 10, cursor: "pointer", color: "#059669" }}><Ic name="eye" size={10} color="#059669" /></button>
+                            <button onClick={(e) => { e.stopPropagation(); onOpenInDrive(f); }} style={{ border: "none", background: "#f0fdf4", borderRadius: 3, padding: "1px 6px", fontSize: 10, cursor: "pointer", color: "#059669" }}>{t.open}</button>
+                          </div>
+                        ))}
+                      </>
+                    )}
+
+                    {/* Work Instructions */}
+                    {wiCount > 0 && (
+                      <>
+                        <div style={{ padding: "4px 0 2px 0", fontSize: 10, fontWeight: 600, color: "#7C3AED", textTransform: "uppercase", letterSpacing: 0.5 }}>
+                          {lang === "de" ? "Arbeitsanweisungen" : "Work Instructions"} ({wiCount})
+                        </div>
+                        {(fm.workInstructions || []).map((f) => {
+                          const ext = fileExt(f.name);
+                          return (
+                            <div key={f.id} style={{ display: "flex", alignItems: "center", gap: 6, padding: "4px 8px", fontSize: 11, borderRadius: 4, cursor: "pointer", background: selected?.id === f.id ? "#f5f3ff" : "transparent" }} onClick={() => setSelected(f)}>
+                              <Ic name="file" size={12} color="#7C3AED" />
+                              <span style={{ flex: 1, color: "#334155" }}>{cleanFormName(f.name)}</span>
+                              <span style={{ fontSize: 9, color: "#7C3AED", fontWeight: 600 }}>WI</span>
+                              <button onClick={(e) => { e.stopPropagation(); onPreview(f); }} style={{ border: "none", background: "#f5f3ff", borderRadius: 3, padding: "1px 6px", fontSize: 10, cursor: "pointer", color: "#7C3AED" }}><Ic name="eye" size={10} color="#7C3AED" /></button>
+                              <button onClick={(e) => { e.stopPropagation(); onOpenInDrive(f); }} style={{ border: "none", background: "#f1f5f9", borderRadius: 3, padding: "1px 6px", fontSize: 10, cursor: "pointer", color: "#028090" }}>{t.open}</button>
+                            </div>
+                          );
+                        })}
+                      </>
                     )}
 
                     {fm.forms.length > 0 && (
@@ -111,7 +164,7 @@ export default function SopExplorer({ files, fileMap, loading, lang, t, onPrevie
                         })}
                       </>
                     )}
-                    {fm.forms.length === 0 && !fm.sop && <div style={{ padding: "6px 8px", fontSize: 11, color: "#cbd5e1", fontStyle: "italic" }}>{t.noForms}</div>}
+                    {fm.forms.length === 0 && !fm.sop && !fm.signatureDoc && liveCount === 0 && wiCount === 0 && <div style={{ padding: "6px 8px", fontSize: 11, color: "#cbd5e1", fontStyle: "italic" }}>{t.noForms}</div>}
                   </div>
                 )}
               </div>
