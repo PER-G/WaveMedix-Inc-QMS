@@ -591,17 +591,27 @@ export default function ApprovalPanel({ session, lang, t, files, folderIds, onFi
           {/* Signature Slots */}
           <div style={{ display: "flex", gap: 8, marginBottom: 8 }}>
             {[
-              { role: "author", label: t.author, email: req.signatoryAuthor, signed: req.signedAuthor },
-              { role: "reviewer", label: t.reviewer, email: req.signatoryReviewer, signed: req.signedReviewer },
-              { role: "approver", label: t.approver, email: req.signatoryApprover, signed: req.signedApprover },
-            ].map(({ role, label, email, signed }) => (
+              { role: "author",   label: t.author,   email: req.signatoryAuthor,   name: req.signatoryAuthorName,   position: req.signatoryAuthorPosition,   signed: req.signedAuthor },
+              { role: "reviewer", label: t.reviewer, email: req.signatoryReviewer, name: req.signatoryReviewerName, position: req.signatoryReviewerPosition, signed: req.signedReviewer },
+              { role: "approver", label: t.approver, email: req.signatoryApprover, name: req.signatoryApproverName, position: req.signatoryApproverPosition, signed: req.signedApprover },
+            ].map(({ role, label, email, name, position, signed }) => (
               <div key={role} style={{
-                flex: 1, padding: "6px 8px", borderRadius: 6, fontSize: 11,
+                flex: 1, padding: "6px 8px", borderRadius: 6, fontSize: 11, overflow: "hidden",
                 border: `1px solid ${signed ? "#05966930" : isNextSigner(req, role) ? "#028090" : "#E5E7EB"}`,
                 background: signed ? "#ECFDF5" : isNextSigner(req, role) ? "#F0FDFA" : "#F9FAFB",
               }}>
                 <div style={{ fontWeight: 600, color: "#374151", marginBottom: 2 }}>{label}</div>
-                <div style={{ color: "#6B7280", fontSize: 10 }}>{email?.split("@")[0] || "\u2014"}</div>
+                <div style={{ color: "#1E293B", fontSize: 11, fontWeight: 500, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }} title={name || email}>
+                  {name || email?.split("@")[0] || "\u2014"}
+                </div>
+                {position && (
+                  <div style={{ color: "#6B7280", fontSize: 9.5, marginTop: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }} title={position}>
+                    {position}
+                  </div>
+                )}
+                <div style={{ color: "#94A3B8", fontSize: 9, marginTop: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }} title={email}>
+                  {email || "\u2014"}
+                </div>
                 <div style={{ marginTop: 4, color: signed ? "#059669" : "#9CA3AF" }}>
                   {signed ? `Signed ${fmtDate(signed)}` : "Pending"}
                 </div>

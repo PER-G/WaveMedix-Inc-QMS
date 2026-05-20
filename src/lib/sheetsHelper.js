@@ -13,6 +13,11 @@ const QUEUE_HEADERS = [
   "adobeAgreementId", "documentHash",
   "signedAuthor", "signedReviewer", "signedApprover",
   "finalizedAt", "finalFileId", "changeRequestId", "notes",
+  // Display name and position for each signatory (added for richer audit trail).
+  // Auto-filled from Function Matrix for Wavemedix staff, free-text for externals.
+  "signatoryAuthorName", "signatoryAuthorPosition",
+  "signatoryReviewerName", "signatoryReviewerPosition",
+  "signatoryApproverName", "signatoryApproverPosition",
 ];
 
 const LOG_HEADERS = [
@@ -101,6 +106,29 @@ export async function ensureSheets(accessToken) {
       valueInputOption: "RAW",
       requestBody: { values: [LOG_HEADERS] },
     });
+  }
+
+  // ── Forward-migration: append any missing header columns to the existing queue
+  // sheet so that older sheets gain the newly introduced fields (name/position).
+  try {
+    const headerRes = await sheets.spreadsheets.values.get({
+      spreadsheetId: queueId,
+      range: "Sheet1!1:1",
+    });
+    const existing = (headerRes.data.values || [[]])[0];
+    const missing = QUEUE_HEADERS.filter((h) => !existing.includes(h));
+    if (missing.length > 0) {
+      const merged = [...existing, ...missing];
+      await sheets.spreadsheets.values.update({
+        spreadsheetId: queueId,
+        range: "Sheet1!A1",
+        valueInputOption: "RAW",
+        requestBody: { values: [merged] },
+      });
+      console.log(`[SHEETS] Queue sheet: added ${missing.length} missing columns (${missing.join(", ")})`);
+    }
+  } catch (err) {
+    console.warn("[SHEETS] Header migration check failed:", err.message);
   }
 
   cachedSheetIds = { queueId, logId };

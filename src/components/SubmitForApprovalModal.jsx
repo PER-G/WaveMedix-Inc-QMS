@@ -5,64 +5,94 @@ import { ALL_TEAM } from "../lib/dashboardHelpers";
 
 const CUSTOM_VALUE = "__custom__";
 
+// Each signatory now has 3 fields: email, name, position.
+// For Wavemedix staff, name + position auto-fill from the team roster
+// (and the Function Matrix role) but stay editable. For external signatories,
+// all 3 fields are entered manually.
 export default function SubmitForApprovalModal({ session, lang, t, fileId, fileName, formsheetId, onClose, onSubmitted }) {
-  const [author, setAuthor] = useState("");
-  const [reviewer, setReviewer] = useState("");
-  const [approver, setApprover] = useState("");
-  const [customAuthor, setCustomAuthor] = useState("");
-  const [customReviewer, setCustomReviewer] = useState("");
-  const [customApprover, setCustomApprover] = useState("");
+  const userEmail = session?.userEmail || session?.user?.email || "";
+  const userName = session?.user?.name || userEmail;
+
+  // Build team list with email as primary identifier
+  const team = ALL_TEAM.map((m) => ({
+    ...m,
+    uid: m.email || m.name,
+    // Use English role as canonical position; German variant is shown in tooltip
+    position: lang === "de" ? (m.roleDe || m.role) : m.role,
+  }));
+
+  const blank = () => ({
+    select: "",      // dropdown value: uid of team member, "__custom__", or ""
+    email: "",       // custom email (when select === CUSTOM_VALUE) or auto-filled
+    name: "",        // display name (editable)
+    position: "",    // Wavemedix position / external title (editable)
+  });
+
+  const [author,   setAuthor]   = useState(blank());
+  const [reviewer, setReviewer] = useState(blank());
+  const [approver, setApprover] = useState(blank());
+
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
 
-  const userEmail = session?.userEmail || session?.user?.email || "";
-  const userName = session?.user?.name || userEmail;
-
-  // Team members with email as primary identifier
-  const team = ALL_TEAM.map((m) => ({
-    ...m,
-    uid: m.email || m.name,
-  }));
-
-  // Resolve actual value (dropdown selection or custom email)
-  const resolveValue = (selectVal, customVal) => {
-    if (selectVal === CUSTOM_VALUE) return customVal.trim();
-    return selectVal;
-  };
-
-  const resolvedAuthor = resolveValue(author, customAuthor);
-  const resolvedReviewer = resolveValue(reviewer, customReviewer);
-  const resolvedApprover = resolveValue(approver, customApprover);
-
   const isValidEmail = (v) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);
 
-  const validate = () => {
-    if (!resolvedAuthor || !resolvedReviewer || !resolvedApprover) return false;
-    if (new Set([resolvedAuthor, resolvedReviewer, resolvedApprover]).size !== 3) return false;
-    // Custom emails must be valid
-    if (author === CUSTOM_VALUE && !isValidEmail(customAuthor.trim())) return false;
-    if (reviewer === CUSTOM_VALUE && !isValidEmail(customReviewer.trim())) return false;
-    if (approver === CUSTOM_VALUE && !isValidEmail(customApprover.trim())) return false;
-    return true;
+  const findMember = (uid) => team.find((m) => m.uid === uid);
+
+  // Resolve when a dropdown value changes — auto-fill fields for team members
+  const handleSelect = (slot, setSlot, value, peers) => {
+    setError("");
+    if (value === "" ) {
+      setSlot(blank());
+      return;
+    }
+    if (value === CUSTOM_VALUE) {
+      setSlot({ select: CUSTOM_VALUE, email: "", name: "", position: "" });
+      return;
+    }
+    const m = findMember(value);
+    if (!m) return;
+    setSlot({
+      select: value,
+      email: m.email || "",
+      name: m.name || "",
+      position: m.position || "",
+    });
   };
 
-  const findMember = (uid) => team.find((m) => m.uid === uid);
+  const updateField = (slot, setSlot, field, value) => {
+    setSlot({ ...slot, [field]: value });
+    setError("");
+  };
+
+  // Used email for uniqueness validation
+  const slotEmail = (s) => (s.email || "").trim().toLowerCase();
+
+  const validate = () => {
+    const sa = slotEmail(author);
+    const sr = slotEmail(reviewer);
+    const sp = slotEmail(approver);
+    if (!sa || !sr || !sp) return false;
+    if (!isValidEmail(sa) || !isValidEmail(sr) || !isValidEmail(sp)) return false;
+    if (new Set([sa, sr, sp]).size !== 3) return false;
+    // Name + Position required for all three (auto-filled for team)
+    for (const s of [author, reviewer, approver]) {
+      if (!s.name.trim() || !s.position.trim()) return false;
+    }
+    return true;
+  };
 
   const handleSubmit = async () => {
     if (!validate()) {
       setError(lang === "de"
-        ? "Bitte alle 3 verschiedenen Unterzeichner auswählen. Manuelle E-Mails müssen gültig sein."
-        : "Please select 3 different signatories. Custom emails must be valid.");
+        ? "Bitte alle 3 Unterzeichner mit gültiger E-Mail, Name und Position auswählen (alle drei müssen verschieden sein)."
+        : "Please select all 3 signatories with a valid email, name and position (all three must differ).");
       return;
     }
 
     setLoading(true);
     setError("");
-
-    const authorMember = findMember(resolvedAuthor);
-    const reviewerMember = findMember(resolvedReviewer);
-    const approverMember = findMember(resolvedApprover);
 
     try {
       const res = await fetch("/api/approval", {
@@ -78,12 +108,15 @@ export default function SubmitForApprovalModal({ session, lang, t, fileId, fileN
           formsheetId: formsheetId || "",
           authorEmail: userEmail,
           authorName: userName,
-          signatoryAuthor: resolvedAuthor,
-          signatoryAuthorName: authorMember?.name || resolvedAuthor,
-          signatoryReviewer: resolvedReviewer,
-          signatoryReviewerName: reviewerMember?.name || resolvedReviewer,
-          signatoryApprover: resolvedApprover,
-          signatoryApproverName: approverMember?.name || resolvedApprover,
+          signatoryAuthor:           author.email.trim(),
+          signatoryAuthorName:       author.name.trim(),
+          signatoryAuthorPosition:   author.position.trim(),
+          signatoryReviewer:         reviewer.email.trim(),
+          signatoryReviewerName:     reviewer.name.trim(),
+          signatoryReviewerPosition: reviewer.position.trim(),
+          signatoryApprover:         approver.email.trim(),
+          signatoryApproverName:     approver.name.trim(),
+          signatoryApproverPosition: approver.position.trim(),
         }),
       });
 
@@ -103,49 +136,86 @@ export default function SubmitForApprovalModal({ session, lang, t, fileId, fileN
     }
   };
 
-  const renderSelect = (label, icon, selectVal, onSelectChange, customVal, onCustomChange, excludeUids) => {
-    const options = team.filter((m) => !excludeUids.includes(m.uid));
-    const isCustom = selectVal === CUSTOM_VALUE;
+  // ── Render one signatory section ──
+  const renderSignatory = (slot, setSlot, index, label, peers) => {
+    const isCustom = slot.select === CUSTOM_VALUE;
+    const isTeamSelected = slot.select && slot.select !== CUSTOM_VALUE && slot.select !== "";
+    const usedEmails = peers.map(slotEmail).filter(Boolean);
+    const conflict = slotEmail(slot) && usedEmails.includes(slotEmail(slot));
+    const options = team.filter((m) => !usedEmails.includes((m.email || "").toLowerCase()));
+
+    const stepColor = ["#028090", "#0369A1", "#7C3AED"][index] || "#028090";
+    const stepBg    = ["#F0FDFA", "#EFF6FF", "#FAF5FF"][index] || "#F0FDFA";
+
     return (
-      <div style={{ marginBottom: 14 }}>
-        <label style={{ fontSize: 12, fontWeight: 600, color: "#374151", display: "block", marginBottom: 4 }}>
-          {icon} {label}
-        </label>
+      <div style={{
+        border: `1px solid ${slot.select ? stepColor + "55" : "#E5E7EB"}`,
+        borderRadius: 8, padding: "10px 12px", marginBottom: 12, background: slot.select ? stepBg : "#FAFAFA",
+      }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 8 }}>
+          <span style={{
+            display: "inline-flex", alignItems: "center", justifyContent: "center",
+            width: 22, height: 22, borderRadius: 11, background: stepColor, color: "#fff",
+            fontSize: 11, fontWeight: 700,
+          }}>{index + 1}</span>
+          <span style={{ fontSize: 13, fontWeight: 600, color: "#1E293B" }}>{label}</span>
+        </div>
+
+        {/* Dropdown: pick from team or "custom" */}
         <select
-          value={selectVal}
-          onChange={(e) => { onSelectChange(e.target.value); setError(""); }}
+          value={slot.select}
+          onChange={(e) => handleSelect(slot, setSlot, e.target.value, peers)}
           style={{
-            width: "100%", padding: "9px 10px", fontSize: 13, borderRadius: isCustom ? "6px 6px 0 0" : 6,
-            border: `1px solid ${selectVal && selectVal !== CUSTOM_VALUE ? "#028090" : isCustom ? "#D97706" : "#D1D5DB"}`,
-            borderBottom: isCustom ? "none" : undefined,
-            background: "#fff", color: selectVal ? "#1E293B" : "#6B7280", cursor: "pointer",
+            width: "100%", padding: "7px 8px", fontSize: 12, borderRadius: 5,
+            border: `1px solid ${isTeamSelected ? stepColor : isCustom ? "#D97706" : "#D1D5DB"}`,
+            background: "#fff", color: slot.select ? "#1E293B" : "#6B7280", cursor: "pointer",
+            marginBottom: 8,
           }}
         >
-          <option value="">{lang === "de" ? "— Bitte auswählen —" : "— Please select —"}</option>
-          {options.map((m) => (
-            <option key={m.uid} value={m.uid}>
-              {m.name} — {m.email ? m.email : (lang === "de" ? "(keine E-Mail)" : "(no email)")}
-            </option>
-          ))}
+          <option value="">{lang === "de" ? "— Person auswählen —" : "— Select person —"}</option>
+          <optgroup label={lang === "de" ? "Wavemedix Team" : "Wavemedix Team"}>
+            {options.map((m) => (
+              <option key={m.uid} value={m.uid}>
+                {m.name} · {m.position}
+              </option>
+            ))}
+          </optgroup>
           <option value={CUSTOM_VALUE}>
-            {lang === "de" ? "✉ Manuelle E-Mail-Adresse eingeben..." : "✉ Enter email manually..."}
+            {lang === "de" ? "✉ Externe Person (manuell eingeben)" : "✉ External person (manual entry)"}
           </option>
         </select>
-        {isCustom && (
-          <input
-            type="email"
-            placeholder={lang === "de" ? "E-Mail-Adresse eingeben..." : "Enter email address..."}
-            value={customVal}
-            onChange={(e) => { onCustomChange(e.target.value); setError(""); }}
-            autoFocus
-            style={{
-              width: "100%", padding: "9px 10px", fontSize: 13,
-              borderRadius: "0 0 6px 6px",
-              border: `1px solid ${customVal && isValidEmail(customVal.trim()) ? "#028090" : "#D97706"}`,
-              background: "#FFFBEB", boxSizing: "border-box",
-              outline: "none",
-            }}
-          />
+
+        {/* Email, Name, Position inputs */}
+        {(isCustom || isTeamSelected) && (
+          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+            <Field label={lang === "de" ? "E-Mail" : "Email"} required
+                   value={slot.email}
+                   onChange={(v) => updateField(slot, setSlot, "email", v)}
+                   placeholder="name@example.com"
+                   type="email"
+                   invalid={!!slot.email && !isValidEmail(slot.email.trim())}
+                   conflict={conflict}
+                   icon="mail" />
+            <Field label={lang === "de" ? "Name" : "Name"} required
+                   value={slot.name}
+                   onChange={(v) => updateField(slot, setSlot, "name", v)}
+                   placeholder={lang === "de" ? "Vorname Nachname" : "First Last"}
+                   icon="user" />
+            <Field label={lang === "de" ? "Position" : "Position"} required
+                   value={slot.position}
+                   onChange={(v) => updateField(slot, setSlot, "position", v)}
+                   placeholder={lang === "de" ? "z.B. Director Quality & RA" : "e.g. Director Quality & RA"}
+                   icon="badge"
+                   hint={isTeamSelected ? (lang === "de" ? "Aus Function Matrix vorausgefüllt – editierbar" : "Pre-filled from Function Matrix – editable") : ""} />
+          </div>
+        )}
+
+        {conflict && (
+          <div style={{ marginTop: 6, fontSize: 11, color: "#DC2626" }}>
+            {lang === "de"
+              ? "⚠ Diese E-Mail wird bereits für einen anderen Unterzeichner verwendet."
+              : "⚠ This email is already used for another signatory."}
+          </div>
         )}
       </div>
     );
@@ -181,11 +251,11 @@ export default function SubmitForApprovalModal({ session, lang, t, fileId, fileN
     onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
     >
       <div style={{
-        background: "#fff", borderRadius: 12, padding: 24, width: 440,
-        boxShadow: "0 8px 32px rgba(0,0,0,0.15)", maxHeight: "90vh", overflowY: "auto",
+        background: "#fff", borderRadius: 12, padding: 22, width: 480,
+        boxShadow: "0 8px 32px rgba(0,0,0,0.15)", maxHeight: "92vh", overflowY: "auto",
       }}>
         {/* Header */}
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
           <h3 style={{ fontSize: 16, fontWeight: 600, color: "#1E293B", margin: 0 }}>
             <Ic name="signature" size={18} color="#028090" /> {t.submitApproval}
           </h3>
@@ -196,16 +266,16 @@ export default function SubmitForApprovalModal({ session, lang, t, fileId, fileN
 
         {/* Document info */}
         <div style={{
-          padding: "10px 14px", background: "#F0FDFA", borderRadius: 8, marginBottom: 16,
-          fontSize: 13, color: "#028090", fontWeight: 500, display: "flex", alignItems: "center", gap: 6,
+          padding: "9px 12px", background: "#F0FDFA", borderRadius: 8, marginBottom: 14,
+          fontSize: 12, color: "#028090", fontWeight: 500, display: "flex", alignItems: "center", gap: 6,
         }}>
           <Ic name="file" size={14} color="#028090" /> {fileName}
         </div>
 
         {/* Signing order info */}
         <div style={{
-          display: "flex", alignItems: "center", gap: 6, marginBottom: 16,
-          padding: "8px 12px", background: "#F8FAFC", borderRadius: 6, border: "1px solid #E5E7EB",
+          display: "flex", alignItems: "center", gap: 6, marginBottom: 14,
+          padding: "7px 11px", background: "#F8FAFC", borderRadius: 6, border: "1px solid #E5E7EB",
         }}>
           <div style={{ fontSize: 11, color: "#6B7280" }}>
             <strong style={{ color: "#374151" }}>
@@ -217,28 +287,15 @@ export default function SubmitForApprovalModal({ session, lang, t, fileId, fileN
           </div>
         </div>
 
-        {/* Signatory selection dropdowns */}
-        {renderSelect(
+        {renderSignatory(author,   setAuthor,   0,
           lang === "de" ? "Ersteller (Author)" : "Author",
-          "①",
-          author, setAuthor,
-          customAuthor, setCustomAuthor,
-          [resolvedReviewer, resolvedApprover].filter(Boolean)
-        )}
-        {renderSelect(
+          [reviewer, approver])}
+        {renderSignatory(reviewer, setReviewer, 1,
           lang === "de" ? "Prüfer (Reviewer)" : "Reviewer",
-          "②",
-          reviewer, setReviewer,
-          customReviewer, setCustomReviewer,
-          [resolvedAuthor, resolvedApprover].filter(Boolean)
-        )}
-        {renderSelect(
+          [author, approver])}
+        {renderSignatory(approver, setApprover, 2,
           lang === "de" ? "Freigeber (Approver)" : "Approver",
-          "③",
-          approver, setApprover,
-          customApprover, setCustomApprover,
-          [resolvedAuthor, resolvedReviewer].filter(Boolean)
-        )}
+          [author, reviewer])}
 
         {error && (
           <div style={{ padding: "6px 10px", background: "#FEF2F2", borderRadius: 6, fontSize: 12, color: "#DC2626", marginBottom: 10 }}>
@@ -247,7 +304,7 @@ export default function SubmitForApprovalModal({ session, lang, t, fileId, fileN
         )}
 
         {/* Action buttons */}
-        <div style={{ display: "flex", gap: 8, marginTop: 16 }}>
+        <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
           <button
             onClick={handleSubmit}
             disabled={loading || !validate()}
@@ -271,6 +328,33 @@ export default function SubmitForApprovalModal({ session, lang, t, fileId, fileN
           </button>
         </div>
       </div>
+    </div>
+  );
+}
+
+// Small labelled input
+function Field({ label, value, onChange, placeholder, type = "text", required, invalid, conflict, hint, icon }) {
+  return (
+    <div>
+      <div style={{ display: "flex", alignItems: "center", gap: 4, marginBottom: 2 }}>
+        <span style={{ fontSize: 10.5, fontWeight: 600, color: "#374151", textTransform: "uppercase", letterSpacing: 0.3 }}>
+          {label}{required && <span style={{ color: "#DC2626" }}> *</span>}
+        </span>
+        {hint && (
+          <span style={{ fontSize: 10, color: "#94A3B8", fontStyle: "italic" }}>· {hint}</span>
+        )}
+      </div>
+      <input
+        type={type}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder={placeholder}
+        style={{
+          width: "100%", padding: "6px 9px", fontSize: 12, borderRadius: 5,
+          border: `1px solid ${invalid || conflict ? "#DC2626" : "#D1D5DB"}`,
+          background: "#fff", boxSizing: "border-box", outline: "none",
+        }}
+      />
     </div>
   );
 }

@@ -166,6 +166,9 @@ async function handleSubmit(accessToken, body) {
     fileId, fileName, formsheetId, version,
     authorEmail, authorName,
     signatoryAuthor, signatoryReviewer, signatoryApprover,
+    signatoryAuthorName, signatoryAuthorPosition,
+    signatoryReviewerName, signatoryReviewerPosition,
+    signatoryApproverName, signatoryApproverPosition,
     changeRequestId,
   } = body;
 
@@ -197,6 +200,12 @@ async function handleSubmit(accessToken, body) {
     signatoryAuthor,
     signatoryReviewer,
     signatoryApprover,
+    signatoryAuthorName: signatoryAuthorName || "",
+    signatoryAuthorPosition: signatoryAuthorPosition || "",
+    signatoryReviewerName: signatoryReviewerName || "",
+    signatoryReviewerPosition: signatoryReviewerPosition || "",
+    signatoryApproverName: signatoryApproverName || "",
+    signatoryApproverPosition: signatoryApproverPosition || "",
     adobeAgreementId: "",
     documentHash,
     signedAuthor: "",
@@ -220,9 +229,9 @@ async function handleSubmit(accessToken, body) {
       const pdfBuffer = Buffer.from(pdfRes.data);
 
       const result = await createAgreement(pdfBuffer, fileName, {
-        author: { email: signatoryAuthor, name: "" },
-        reviewer: { email: signatoryReviewer, name: "" },
-        approver: { email: signatoryApprover, name: "" },
+        author:   { email: signatoryAuthor,   name: signatoryAuthorName   || "" },
+        reviewer: { email: signatoryReviewer, name: signatoryReviewerName || "" },
+        approver: { email: signatoryApprover, name: signatoryApproverName || "" },
       });
 
       if (result.agreementId) {

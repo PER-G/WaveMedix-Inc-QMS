@@ -74,24 +74,29 @@ export async function createAgreement(pdfBuffer, fileName, signatories) {
   const { transientDocumentId } = await uploadRes.json();
 
   // Step 2: Create agreement with sequential signing
+  const memberInfo = (s) => {
+    const m = { email: s.email, securityOption: { authenticationMethod: "NONE" } };
+    if (s.name) m.name = s.name;
+    return m;
+  };
   const agreement = await apiCall("POST", "/agreements", {
     fileInfos: [{ transientDocumentId }],
     name: fileName,
     participantSetsInfo: [
       {
-        memberInfos: [{ email: signatories.author.email, securityOption: { authenticationMethod: "NONE" } }],
+        memberInfos: [memberInfo(signatories.author)],
         role: "SIGNER",
         order: 1,
         label: "Author",
       },
       {
-        memberInfos: [{ email: signatories.reviewer.email, securityOption: { authenticationMethod: "NONE" } }],
+        memberInfos: [memberInfo(signatories.reviewer)],
         role: "SIGNER",
         order: 2,
         label: "Reviewer",
       },
       {
-        memberInfos: [{ email: signatories.approver.email, securityOption: { authenticationMethod: "NONE" } }],
+        memberInfos: [memberInfo(signatories.approver)],
         role: "SIGNER",
         order: 3,
         label: "Approver",
