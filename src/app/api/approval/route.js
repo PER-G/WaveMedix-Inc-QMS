@@ -16,9 +16,28 @@ import {
   isEnabled as isAdobeSignEnabled,
   createAgreement,
   getAgreementStatus,
+  getSigningUrls,
   getSignedDocument,
   cancelAgreement,
 } from "../../../lib/adobeSignHelper";
+import {
+  sendEmail,
+  tmplPendingSignature,
+  tmplCompleted,
+  tmplRejected,
+  tmplAdobeStarted,
+  tmplCompletedSigned,
+} from "../../../lib/gmailHelper";
+
+// ───── Gmail notification helper (best-effort, never throws) ─────
+async function notify(accessToken, from, to, tmpl) {
+  if (!to || !tmpl) return;
+  try {
+    await sendEmail(accessToken, { from, to, subject: tmpl.subject, html: tmpl.html });
+  } catch (err) {
+    console.warn("[NOTIFY] Gmail send failed:", err.message);
+  }
+}
 
 const FOLDER_ID = process.env.GOOGLE_DRIVE_FOLDER_ID;
 const EXPIRY_DAYS = 30;
@@ -141,6 +160,8 @@ export async function POST(req) {
         return await handleSign(accessToken, body);
       case "check-status":
         return await handleCheckStatus(accessToken, body);
+      case "download-signed":
+        return await handleDownloadSigned(accessToken, body);
       case "reject":
         return await handleReject(accessToken, body);
       case "withdraw":
@@ -247,6 +268,24 @@ async function handleSubmit(accessToken, body) {
   await addApprovalRequest(accessToken, request);
 
   console.log("[APPROVAL] Request submitted:", requestId, fileName);
+
+  // ── Notifications ──
+  // Adobe Sign: Adobe handles signer notifications itself. We send an
+  //   FYI to the submitter so they know the workflow started.
+  // No Adobe Sign: Send a "your signature is required" email to the Author.
+  const submittedAt = new Date().toLocaleString("de-DE");
+  if (isAdobeSignEnabled() && request.adobeAgreementId) {
+    await notify(accessToken, authorEmail, authorEmail,
+      tmplAdobeStarted({ docName: fileName, authorName, version: request.version }));
+  } else {
+    await notify(accessToken, authorEmail, signatoryAuthor,
+      tmplPendingSignature({
+        docName: fileName,
+        role: "Author",
+        authorName, submittedAt, version: request.version,
+      }));
+  }
+
   return Response.json({
     success: true,
     requestId,
@@ -332,11 +371,35 @@ async function handleSign(accessToken, body) {
     details: `${signedField.replace("signed", "")} signed by ${actorName}`,
   });
 
-  // If all 3 signed, finalize
+  // If all 3 signed, finalize. Otherwise, notify the NEXT signer.
   if (signedCount === 3) {
-    // Re-fetch the updated request
     const updated = await getRequestById(accessToken, requestId);
-    await finalize(accessToken, updated);
+    const finalizeResult = await finalize(accessToken, updated);
+    // Notify Author that everything is done
+    await notify(accessToken, actorEmail, updated.authorEmail,
+      finalizeResult?.signedFileLink
+        ? tmplCompletedSigned({ docName: updated.fileName, signedFileLink: finalizeResult.signedFileLink })
+        : tmplCompleted({ docName: updated.fileName, version: updated.version }));
+  } else {
+    const submittedAt = new Date(request.submittedAt).toLocaleString("de-DE");
+    let nextEmail = null, nextRole = null;
+    if (signedField === "signedAuthor") {
+      nextEmail = request.signatoryReviewer;
+      nextRole = "Reviewer";
+    } else if (signedField === "signedReviewer") {
+      nextEmail = request.signatoryApprover;
+      nextRole = "Approver";
+    }
+    if (nextEmail && nextRole) {
+      await notify(accessToken, actorEmail, nextEmail,
+        tmplPendingSignature({
+          docName: request.fileName,
+          role: nextRole,
+          authorName: request.authorName,
+          submittedAt,
+          version: request.version,
+        }));
+    }
   }
 
   return Response.json({ success: true, signedField, signedCount, total: 3 });
@@ -353,11 +416,61 @@ async function handleCheckStatus(accessToken, body) {
 
   const status = await getAgreementStatus(request.adobeAgreementId);
 
-  if (status.status === "SIGNED") {
-    await finalize(accessToken, request);
+  // Reflect Adobe Sign signer states into the queue (signed-At per role)
+  try {
+    const updates = {};
+    for (const signer of status.signerStatuses || []) {
+      const isSigned = (signer.status || "").toUpperCase().includes("SIGNED")
+        || (signer.status || "").toUpperCase().includes("APPROVED");
+      if (!isSigned) continue;
+      const ts = new Date().toISOString();
+      if (signer.order === 1 && !request.signedAuthor)   updates.signedAuthor = ts;
+      if (signer.order === 2 && !request.signedReviewer) updates.signedReviewer = ts;
+      if (signer.order === 3 && !request.signedApprover) updates.signedApprover = ts;
+    }
+    if (Object.keys(updates).length > 0) {
+      await updateApprovalStatus(accessToken, requestId, updates);
+    }
+  } catch (err) {
+    console.warn("[APPROVAL] Could not sync Adobe signer states:", err.message);
   }
 
-  return Response.json({ success: true, ...status });
+  // Also surface signing URLs to the UI (so we can deep-link to Adobe Sign)
+  const signingUrls = await getSigningUrls(request.adobeAgreementId);
+
+  let finalizeResult = null;
+  if (status.status === "SIGNED") {
+    finalizeResult = await finalize(accessToken, request);
+  }
+
+  return Response.json({ success: true, ...status, signingUrls, finalizeResult });
+}
+
+// ═══ Manually download / save signed PDF on demand ═══
+async function handleDownloadSigned(accessToken, body) {
+  const { requestId } = body;
+  const request = await getRequestById(accessToken, requestId);
+  if (!request) return Response.json({ error: "Request not found" }, { status: 404 });
+  if (!isAdobeSignEnabled() || !request.adobeAgreementId) {
+    return Response.json({ error: "No Adobe Sign agreement on this request" }, { status: 422 });
+  }
+  // If already saved earlier (finalFileId), just return the Drive link
+  if (request.finalFileId) {
+    const drive = getDriveClient(accessToken);
+    try {
+      const meta = await drive.files.get({
+        fileId: request.finalFileId,
+        fields: "id,name,webViewLink,webContentLink",
+        supportsAllDrives: true,
+      });
+      return Response.json({ success: true, file: meta.data, alreadySaved: true });
+    } catch {
+      // Fall through and re-save below
+    }
+  }
+  // Otherwise: pull from Adobe and save to Drive
+  const result = await finalize(accessToken, request);
+  return Response.json({ success: true, ...result });
 }
 
 // ═══ Reject ═══
@@ -388,6 +501,10 @@ async function handleReject(accessToken, body) {
   if (isAdobeSignEnabled() && request.adobeAgreementId) {
     await cancelAgreement(request.adobeAgreementId).catch(() => {});
   }
+
+  // Notify the Author that the request was rejected
+  await notify(accessToken, actorEmail, request.authorEmail,
+    tmplRejected({ docName: request.fileName, rejectorName: actorName, reason }));
 
   return Response.json({ success: true });
 }
@@ -524,18 +641,50 @@ async function handleObsolete(accessToken, body) {
 // ═══ Finalization ═══
 async function finalize(accessToken, request) {
   const drive = getDriveClient(accessToken);
+  let signedFile = null;
 
   try {
-    // 1. If Adobe Sign, download signed PDF
+    // 1. If Adobe Sign, download signed PDF and put it into a "Signed Documents" subfolder
     if (isAdobeSignEnabled() && request.adobeAgreementId) {
       const signedPdf = await getSignedDocument(request.adobeAgreementId);
       if (signedPdf && !(signedPdf.enabled === false)) {
-        // Upload signed PDF to Drive
-        const signedFileName = request.fileName.replace(/ENTWURF|DRAFT/i, "") + `_V${request.version || "1.0"}_SIGNED.pdf`;
-        await drive.files.create({
+        // Find or create the "Signed Documents" subfolder
+        let signedFolderId = null;
+        try {
+          const q = await drive.files.list({
+            q: `'${FOLDER_ID}' in parents and name='Signed Documents' and mimeType='application/vnd.google-apps.folder' and trashed=false`,
+            fields: "files(id)",
+            supportsAllDrives: true,
+            includeItemsFromAllDrives: true,
+            corpora: "allDrives",
+          });
+          if (q.data.files && q.data.files.length > 0) {
+            signedFolderId = q.data.files[0].id;
+          } else {
+            const created = await drive.files.create({
+              requestBody: {
+                name: "Signed Documents",
+                mimeType: "application/vnd.google-apps.folder",
+                parents: [FOLDER_ID],
+              },
+              supportsAllDrives: true,
+            });
+            signedFolderId = created.data.id;
+          }
+        } catch (err) {
+          console.warn("[APPROVAL] Could not get Signed Documents folder:", err.message);
+        }
+
+        const signedFileName = request.fileName
+          .replace(/\.pdf$/i, "")
+          .replace(/ENTWURF|DRAFT/gi, "")
+          .replace(/_+$/, "")
+          .replace(/\s+$/, "") + `_V${request.version || "1.0"}_SIGNED.pdf`;
+
+        const created = await drive.files.create({
           requestBody: {
             name: signedFileName,
-            parents: [FOLDER_ID],
+            parents: [signedFolderId || FOLDER_ID],
             mimeType: "application/pdf",
           },
           media: {
@@ -543,7 +692,9 @@ async function finalize(accessToken, request) {
             body: require("stream").Readable.from(signedPdf),
           },
           supportsAllDrives: true,
+          fields: "id,name,webViewLink,webContentLink",
         });
+        signedFile = created.data;
       }
     }
 
@@ -599,11 +750,11 @@ async function finalize(accessToken, request) {
       }
     }
 
-    // 4. Update queue status
+    // 4. Update queue status. If a signed PDF was saved, point finalFileId to it.
     await updateApprovalStatus(accessToken, request.requestId, {
       status: "APPROVED",
       finalizedAt: new Date().toISOString(),
-      finalFileId: request.fileId,
+      finalFileId: signedFile?.id || request.fileId,
     });
 
     // 5. Log finalization
@@ -613,11 +764,19 @@ async function finalize(accessToken, request) {
       actorEmail: "system",
       actorName: "System",
       documentHash: request.documentHash,
-      fileId: request.fileId,
-      details: `Document finalized as V${version}`,
+      fileId: signedFile?.id || request.fileId,
+      details: signedFile
+        ? `Document finalized as V${version}; signed PDF saved as ${signedFile.name}`
+        : `Document finalized as V${version}`,
     });
 
     console.log("[APPROVAL] Finalized:", request.requestId, request.fileName);
+
+    return {
+      finalFileId: signedFile?.id || request.fileId,
+      signedFile,
+      signedFileLink: signedFile?.webViewLink || null,
+    };
   } catch (err) {
     console.error("[APPROVAL] Finalization error:", err);
     await appendToLog(accessToken, {

@@ -104,6 +104,33 @@ export default function ApprovalPanel({ session, lang, t, files, folderIds, onFi
     return () => clearInterval(interval);
   }, [fetchApprovals]);
 
+  // ── Auto-poll Adobe Sign status when there are SIGNING requests ──
+  useEffect(() => {
+    if (!adobeSignEnabled) return;
+    const signingReqs = pending.filter((r) => r.status === "SIGNING" && r.adobeAgreementId);
+    if (signingReqs.length === 0) return;
+    const interval = setInterval(async () => {
+      for (const req of signingReqs) {
+        try {
+          await fetch("/api/approval", {
+            method: "POST",
+            headers: { "Content-Type": "application/json", "x-access-token": session.accessToken },
+            body: JSON.stringify({
+              action: "check-status",
+              requestId: req.requestId,
+              actorEmail: userEmail,
+              actorName: userName,
+            }),
+          });
+        } catch (err) {
+          console.warn("[APPROVALS] poll failed:", err.message);
+        }
+      }
+      fetchApprovals();
+    }, 30000); // 30s polling while there's a SIGNING agreement
+    return () => clearInterval(interval);
+  }, [adobeSignEnabled, pending, session?.accessToken, userEmail, userName, fetchApprovals]);
+
   const postAction = async (action, body) => {
     setActionLoading(body.requestId || action);
     try {
@@ -124,6 +151,44 @@ export default function ApprovalPanel({ session, lang, t, files, folderIds, onFi
       if (!res.ok) {
         alert(data.error || "Error");
         return;
+      }
+      await fetchApprovals();
+    } catch (err) {
+      alert("Error: " + err.message);
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  // ── Fetch signed PDF from Adobe & save to Drive, then open the Drive link ──
+  const downloadSigned = async (req) => {
+    setActionLoading(req.requestId);
+    try {
+      const res = await fetch("/api/approval", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-access-token": session.accessToken,
+        },
+        body: JSON.stringify({
+          action: "download-signed",
+          requestId: req.requestId,
+          actorEmail: userEmail,
+          actorName: userName,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        alert(data.error || "Error fetching signed PDF");
+        return;
+      }
+      const link = data.file?.webViewLink || data.signedFile?.webViewLink || data.signedFileLink;
+      if (link) {
+        window.open(link, "_blank");
+      } else {
+        alert(lang === "de"
+          ? "Signiertes PDF gespeichert, aber kein Drive-Link verfügbar."
+          : "Signed PDF saved, but no Drive link available.");
       }
       await fetchApprovals();
     } catch (err) {
@@ -624,8 +689,22 @@ export default function ApprovalPanel({ session, lang, t, files, folderIds, onFi
             SHA-256: {req.documentHash?.substring(0, 16)}...
           </div>
 
+          {/* Adobe Sign status banner (when active) */}
+          {adobeSignEnabled && req.status === "SIGNING" && (
+            <div style={{
+              marginBottom: 8, padding: "6px 10px", background: "#EFF6FF",
+              border: "1px solid #BFDBFE", borderRadius: 6, fontSize: 11, color: "#1E40AF",
+              display: "flex", alignItems: "center", gap: 6,
+            }}>
+              <span style={{ display: "inline-block", width: 6, height: 6, borderRadius: 3, background: "#3B82F6", animation: "pulse 1.5s infinite" }} />
+              {lang === "de"
+                ? "Adobe Sign aktiv — Status wird alle 30 s aktualisiert. Signers erhalten Emails direkt von Adobe."
+                : "Adobe Sign active — status refreshes every 30 s. Signers receive emails from Adobe directly."}
+            </div>
+          )}
+
           {/* Actions */}
-          <div style={{ display: "flex", gap: 6 }}>
+          <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
             {canSign(req) && (
               <button
                 onClick={() => postAction("sign", { requestId: req.requestId })}
@@ -640,15 +719,32 @@ export default function ApprovalPanel({ session, lang, t, files, folderIds, onFi
             )}
 
             {adobeSignEnabled && req.adobeAgreementId && (
-              <button
-                onClick={() => postAction("check-status", { requestId: req.requestId })}
-                style={{
-                  padding: "5px 12px", fontSize: 12, borderRadius: 6,
-                  border: "1px solid #028090", background: "#fff", color: "#028090", cursor: "pointer",
-                }}
-              >
-                Adobe Sign Status
-              </button>
+              <>
+                <button
+                  onClick={() => postAction("check-status", { requestId: req.requestId })}
+                  style={{
+                    padding: "5px 12px", fontSize: 12, borderRadius: 6,
+                    border: "1px solid #3B82F6", background: "#EFF6FF", color: "#1E40AF",
+                    cursor: "pointer", display: "flex", alignItems: "center", gap: 4,
+                  }}
+                  title={lang === "de" ? "Adobe Sign Status manuell prüfen" : "Manually refresh Adobe Sign status"}
+                >
+                  <Ic name="zap" size={12} color="#1E40AF" />
+                  {lang === "de" ? "Adobe Sign Status" : "Refresh Adobe Status"}
+                </button>
+                <a
+                  href={`https://secure.adobesign.com/public/agreements/${req.adobeAgreementId}`}
+                  target="_blank" rel="noreferrer"
+                  style={{
+                    padding: "5px 12px", fontSize: 12, borderRadius: 6,
+                    border: "1px solid #BFDBFE", background: "#fff", color: "#1E40AF",
+                    cursor: "pointer", textDecoration: "none", display: "inline-flex", alignItems: "center", gap: 4,
+                  }}
+                >
+                  <Ic name="open" size={11} color="#1E40AF" />
+                  {lang === "de" ? "In Adobe öffnen" : "Open in Adobe"}
+                </a>
+              </>
             )}
 
             <button
@@ -723,15 +819,37 @@ export default function ApprovalPanel({ session, lang, t, files, folderIds, onFi
           {history.map((req) => (
             <div key={req.requestId} style={{
               padding: "8px 12px", borderBottom: "1px solid #F3F4F6", fontSize: 12,
-              display: "flex", justifyContent: "space-between", alignItems: "center",
+              display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8,
             }}>
-              <div>
-                <span style={{ fontWeight: 500 }}>{req.fileName}</span>
-                <span style={{ color: "#9CA3AF", marginLeft: 8 }}>{fmtDate(req.finalizedAt || req.submittedAt)}</span>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontWeight: 500, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{req.fileName}</div>
+                <div style={{ color: "#9CA3AF", fontSize: 11 }}>{fmtDate(req.finalizedAt || req.submittedAt)}</div>
               </div>
+
+              {/* Signed-PDF download button (only for APPROVED requests with Adobe Sign) */}
+              {req.status === "APPROVED" && req.adobeAgreementId && (
+                <button
+                  onClick={() => downloadSigned(req)}
+                  disabled={actionLoading === req.requestId}
+                  style={{
+                    padding: "4px 10px", fontSize: 11, borderRadius: 5,
+                    border: "1px solid #059669", background: "#ECFDF5", color: "#047857",
+                    cursor: "pointer", whiteSpace: "nowrap",
+                    display: "inline-flex", alignItems: "center", gap: 4,
+                  }}
+                  title={lang === "de" ? "Signiertes PDF aus Adobe holen + in Drive speichern" : "Fetch signed PDF from Adobe + save to Drive"}
+                >
+                  <Ic name="open" size={11} color="#047857" />
+                  {actionLoading === req.requestId
+                    ? (lang === "de" ? "Lade..." : "Loading...")
+                    : (lang === "de" ? "Signierte PDF" : "Signed PDF")}
+                </button>
+              )}
+
               <span style={{
                 fontSize: 10, fontWeight: 600, padding: "2px 6px", borderRadius: 10,
                 background: `${statusColor(req.status)}15`, color: statusColor(req.status),
+                whiteSpace: "nowrap",
               }}>
                 {req.status}
               </span>

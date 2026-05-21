@@ -1,6 +1,17 @@
 // ═══ Adobe Sign (Acrobat Sign) API Helper ═══
-// Optional integration — all functions check if Adobe Sign is configured.
-// When not configured, the approval workflow falls back to in-app approvals.
+// Optional integration. When BOTH env vars are set the approval workflow
+// switches to Adobe Sign automatically. When not configured, the workflow
+// falls back to in-app approvals + Gmail notifications.
+//
+// ── How to enable on Vercel ──
+//  1) Adobe Admin Console -> Acrobat Sign -> Account -> Integration Key
+//     (or use OAuth2 with refresh token). Required scopes:
+//       agreement_send  agreement_read  agreement_retention
+//   2) Set environment variables on Vercel:
+//       ADOBE_SIGN_API_URL          = https://api.eu1.adobesign.com/api/rest/v6
+//                                    (or na1.* / au1.* / in1.* / jp1.* depending on region)
+//       ADOBE_SIGN_INTEGRATION_KEY  = <the integration key>
+//   3) Redeploy. The QMS app picks up the change at runtime — no code edit.
 
 const ADOBE_SIGN_API_URL = process.env.ADOBE_SIGN_API_URL;
 const ADOBE_SIGN_INTEGRATION_KEY = process.env.ADOBE_SIGN_INTEGRATION_KEY;
@@ -157,6 +168,29 @@ export async function getSignedDocument(agreementId) {
   }
 
   return Buffer.from(await res.arrayBuffer());
+}
+
+/**
+ * Get signing URLs for each participant (so the UI can deep-link to Adobe Sign).
+ * @param {string} agreementId
+ * @returns {Array<{email: string, signingUrl: string}>}
+ */
+export async function getSigningUrls(agreementId) {
+  if (!isEnabled()) return [];
+  try {
+    const res = await apiCall("GET", `/agreements/${agreementId}/signingUrls`);
+    const out = [];
+    for (const set of res.signingUrlSetInfos || []) {
+      for (const url of set.signingUrls || []) {
+        out.push({ email: url.email || "", signingUrl: url.esignUrl || "" });
+      }
+    }
+    return out;
+  } catch (err) {
+    // Adobe returns 404 with the code "ALREADY_SIGNED" once all signers are done
+    console.warn("[ADOBE_SIGN] getSigningUrls failed:", err.message);
+    return [];
+  }
 }
 
 /**
