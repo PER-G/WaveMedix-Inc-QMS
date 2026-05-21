@@ -2,6 +2,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { Ic } from "./icons";
 import SubmitForApprovalModal from "./SubmitForApprovalModal";
+import AdobeExternalModal from "./AdobeExternalModal";
 
 const ALLOWED_EXTENSIONS = [".pdf"];
 const FOLDER_KEYS = ["qmh", "development", "operations"];
@@ -16,6 +17,7 @@ export default function ApprovalPanel({ session, lang, t, files, folderIds, onFi
   const [rejectReason, setRejectReason] = useState("");
   const [actionLoading, setActionLoading] = useState(null);
   const [showHistory, setShowHistory] = useState(false);
+  const [adobeExternalReq, setAdobeExternalReq] = useState(null); // request being routed via external Adobe
 
   // ── New Approval Request state ──
   const [showNew, setShowNew] = useState(false);
@@ -619,6 +621,17 @@ export default function ApprovalPanel({ session, lang, t, files, folderIds, onFi
         />
       )}
 
+      {/* ═══ ADOBE SIGN EXTERNAL WORKFLOW MODAL ═══ */}
+      {adobeExternalReq && (
+        <AdobeExternalModal
+          session={session}
+          lang={lang}
+          request={adobeExternalReq}
+          onClose={() => setAdobeExternalReq(null)}
+          onCompleted={() => { fetchApprovals(); if (onFilesChanged) onFilesChanged(); }}
+        />
+      )}
+
       {/* ═══ PENDING APPROVALS ═══ */}
       <h3 style={{ fontSize: 15, fontWeight: 600, marginBottom: 12, color: "#1E293B" }}>
         <Ic name="signature" size={16} color="#028090" />{" "}
@@ -703,9 +716,23 @@ export default function ApprovalPanel({ session, lang, t, files, folderIds, onFi
             </div>
           )}
 
+          {/* External-Adobe info banner (when request is in manual Adobe workflow) */}
+          {(req.notes || "").includes("[Adobe-external]") && (
+            <div style={{
+              marginBottom: 8, padding: "6px 10px", background: "#FFF7ED",
+              border: "1px solid #FED7AA", borderRadius: 6, fontSize: 11, color: "#9A3412",
+              display: "flex", alignItems: "center", gap: 6,
+            }}>
+              <span style={{ display: "inline-block", width: 18, height: 18, background: "linear-gradient(135deg,#EA4C2C,#D62D20)", borderRadius: 4, color: "#fff", fontSize: 11, fontWeight: 800, textAlign: "center", lineHeight: "18px" }}>A</span>
+              {lang === "de"
+                ? "Wird extern in Adobe Sign signiert. Nach Abschluss das signierte PDF hier hochladen."
+                : "Currently being signed externally in Adobe Sign. Upload the signed PDF here when done."}
+            </div>
+          )}
+
           {/* Actions */}
           <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-            {canSign(req) && (
+            {canSign(req) && !((req.notes || "").includes("[Adobe-external]")) && (
               <button
                 onClick={() => postAction("sign", { requestId: req.requestId })}
                 disabled={actionLoading === req.requestId}
@@ -715,6 +742,28 @@ export default function ApprovalPanel({ session, lang, t, files, folderIds, onFi
                 }}
               >
                 <Ic name="check" size={12} color="#fff" /> {t.sign}
+              </button>
+            )}
+
+            {/* Adobe external workflow trigger / continuation */}
+            {!adobeSignEnabled && req.authorEmail === userEmail && (
+              <button
+                onClick={() => setAdobeExternalReq(req)}
+                style={{
+                  padding: "5px 12px", fontSize: 12, fontWeight: 600, borderRadius: 6, cursor: "pointer",
+                  border: "1px solid #EA4C2C",
+                  background: (req.notes || "").includes("[Adobe-external]") ? "#FFF7ED" : "#fff",
+                  color: "#D62D20",
+                  display: "inline-flex", alignItems: "center", gap: 4,
+                }}
+                title={lang === "de"
+                  ? "Antrag extern in Adobe Sign unterschreiben lassen"
+                  : "Send to Adobe Sign for external signing"}
+              >
+                <span style={{ display: "inline-block", width: 16, height: 16, background: "linear-gradient(135deg,#EA4C2C,#D62D20)", borderRadius: 3, color: "#fff", fontSize: 10, fontWeight: 800, textAlign: "center", lineHeight: "16px" }}>A</span>
+                {(req.notes || "").includes("[Adobe-external]")
+                  ? (lang === "de" ? "Adobe: Signiertes PDF hochladen" : "Adobe: upload signed PDF")
+                  : (lang === "de" ? "Via Adobe Sign senden" : "Send via Adobe Sign")}
               </button>
             )}
 

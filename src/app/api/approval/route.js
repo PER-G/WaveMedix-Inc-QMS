@@ -162,6 +162,10 @@ export async function POST(req) {
         return await handleCheckStatus(accessToken, body);
       case "download-signed":
         return await handleDownloadSigned(accessToken, body);
+      case "start-adobe-external":
+        return await handleStartAdobeExternal(accessToken, body);
+      case "finalize-external":
+        return await handleFinalizeExternal(accessToken, body);
       case "reject":
         return await handleReject(accessToken, body);
       case "withdraw":
@@ -444,6 +448,129 @@ async function handleCheckStatus(accessToken, body) {
   }
 
   return Response.json({ success: true, ...status, signingUrls, finalizeResult });
+}
+
+// ═══ Mark a request as out for signature via Adobe Sign (external workflow) ═══
+// The QMS app has no Adobe API key, so the user opens Adobe manually,
+// uploads the PDF there, configures signers and clicks Send. This action
+// just flips the request to SIGNING + leaves an audit-trail note so the
+// in-app workflow stops competing with Adobe.
+async function handleStartAdobeExternal(accessToken, body) {
+  const { requestId, actorEmail, actorName } = body;
+  const request = await getRequestById(accessToken, requestId);
+  if (!request) return Response.json({ error: "Request not found" }, { status: 404 });
+  if (request.status !== "SUBMITTED" && request.status !== "SIGNING") {
+    return Response.json({ error: `Cannot send to Adobe with status: ${request.status}` }, { status: 422 });
+  }
+
+  const prevNotes = request.notes || "";
+  const marker = "[Adobe-external]";
+  const newNotes = prevNotes.includes(marker)
+    ? prevNotes
+    : (prevNotes ? `${prevNotes} ${marker}` : marker);
+
+  await updateApprovalStatus(accessToken, requestId, {
+    status: "SIGNING",
+    notes: newNotes,
+  });
+
+  await appendToLog(accessToken, {
+    requestId,
+    action: "ADOBE_EXTERNAL_STARTED",
+    actorEmail, actorName,
+    documentHash: request.documentHash,
+    fileId: request.fileId,
+    details: `Out-of-band Adobe Sign workflow started by ${actorName}. Signed PDF will be uploaded manually when complete.`,
+  });
+
+  return Response.json({ success: true });
+}
+
+// ═══ Finalize: user uploaded the externally-signed PDF, link it + close ═══
+async function handleFinalizeExternal(accessToken, body) {
+  const { requestId, signedFileId, signedFileName, actorEmail, actorName } = body;
+  if (!signedFileId) return Response.json({ error: "signedFileId is required" }, { status: 400 });
+
+  const request = await getRequestById(accessToken, requestId);
+  if (!request) return Response.json({ error: "Request not found" }, { status: 404 });
+
+  const drive = getDriveClient(accessToken);
+
+  // Move the uploaded file into the "Signed Documents" subfolder
+  let signedFolderId = null;
+  try {
+    const q = await drive.files.list({
+      q: `'${FOLDER_ID}' in parents and name='Signed Documents' and mimeType='application/vnd.google-apps.folder' and trashed=false`,
+      fields: "files(id)",
+      supportsAllDrives: true,
+      includeItemsFromAllDrives: true,
+      corpora: "allDrives",
+    });
+    if (q.data.files?.length) {
+      signedFolderId = q.data.files[0].id;
+    } else {
+      const created = await drive.files.create({
+        requestBody: { name: "Signed Documents", mimeType: "application/vnd.google-apps.folder", parents: [FOLDER_ID] },
+        supportsAllDrives: true,
+      });
+      signedFolderId = created.data.id;
+    }
+  } catch (err) {
+    console.warn("[APPROVAL] Signed Documents folder lookup failed:", err.message);
+  }
+
+  // Move + rename the uploaded file
+  let webViewLink = null;
+  try {
+    const desired = (request.fileName || "document")
+      .replace(/\.pdf$/i, "")
+      .replace(/ENTWURF|DRAFT/gi, "")
+      .replace(/_+$/, "").replace(/\s+$/, "")
+      + `_V${request.version || "1.0"}_SIGNED_Adobe.pdf`;
+
+    const meta = await drive.files.get({ fileId: signedFileId, fields: "parents,name,webViewLink", supportsAllDrives: true });
+    const prevParents = (meta.data.parents || []).join(",");
+
+    const upd = await drive.files.update({
+      fileId: signedFileId,
+      addParents: signedFolderId || undefined,
+      removeParents: prevParents || undefined,
+      requestBody: { name: desired },
+      supportsAllDrives: true,
+      fields: "id,name,webViewLink",
+    });
+    webViewLink = upd.data.webViewLink;
+  } catch (err) {
+    console.warn("[APPROVAL] Could not relocate/rename signed file:", err.message);
+  }
+
+  // Mark all 3 in-app signature slots as "external" so the audit trail isn't
+  // empty (we record the upload as a single APPROVED event).
+  const now = new Date().toISOString();
+  const updates = {
+    status: "APPROVED",
+    finalizedAt: now,
+    finalFileId: signedFileId,
+  };
+  if (!request.signedAuthor)   updates.signedAuthor   = now;
+  if (!request.signedReviewer) updates.signedReviewer = now;
+  if (!request.signedApprover) updates.signedApprover = now;
+  await updateApprovalStatus(accessToken, requestId, updates);
+
+  await appendToLog(accessToken, {
+    requestId,
+    action: "ADOBE_EXTERNAL_FINALIZED",
+    actorEmail, actorName,
+    documentHash: request.documentHash,
+    fileId: signedFileId,
+    details: `External Adobe Sign workflow completed. Signed PDF uploaded: ${signedFileName || signedFileId}`,
+  });
+
+  // Notify the Author (best-effort)
+  await notify(accessToken, actorEmail, request.authorEmail,
+    tmplCompletedSigned({ docName: request.fileName, signedFileLink: webViewLink }));
+
+  return Response.json({ success: true, signedFileLink: webViewLink, finalFileId: signedFileId });
 }
 
 // ═══ Manually download / save signed PDF on demand ═══
