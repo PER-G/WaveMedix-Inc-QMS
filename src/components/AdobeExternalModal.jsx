@@ -67,6 +67,25 @@ export default function AdobeExternalModal({ session, lang, request, onClose, on
     window.open(ADOBE_SEND_URL, "_blank", "noopener,noreferrer");
   };
 
+  // Download the source PDF from Google Drive directly to the user's machine.
+  // Adobe's sendforsignature page doesn't accept pre-loaded files via URL —
+  // so the practical workflow is: download here, then drag the file into Adobe.
+  const downloadPdfFromDrive = () => {
+    if (!request.fileId) return;
+    // Google's "uc?export=download" endpoint forces a download of the file in
+    // the user's existing browser session (the user is already logged into
+    // Drive, so no extra auth step is needed).
+    const url = `https://drive.google.com/uc?id=${request.fileId}&export=download`;
+    window.open(url, "_blank", "noopener,noreferrer");
+  };
+
+  // Open the Drive preview page (fallback if direct download is blocked, e.g.
+  // because Drive shows a virus-scan warning for large files).
+  const openInDrive = () => {
+    const link = request.fileWebViewLink || `https://drive.google.com/file/d/${request.fileId}/view`;
+    window.open(link, "_blank", "noopener,noreferrer");
+  };
+
   const onFileChoose = async (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -142,24 +161,54 @@ export default function AdobeExternalModal({ session, lang, request, onClose, on
 
         {step === "review" && (
           <>
+            {/* Adobe limitation note */}
+            <div style={{ marginBottom: 12, padding: "8px 12px", background: "#FEF3C7", border: "1px solid #FDE68A",
+                          borderRadius: 6, fontSize: 11.5, color: "#78350F", lineHeight: 1.5 }}>
+              <b>{lang === "de" ? "Hinweis:" : "Note:"}</b>{" "}
+              {lang === "de"
+                ? "Adobe Sign lädt das PDF nicht automatisch. Bitte zuerst hier herunterladen, dann in Adobe per Drag & Drop einwerfen oder über „Dateien auswählen“ hochladen."
+                : "Adobe Sign does not auto-load the PDF. Download it here first, then drag & drop into Adobe or use “Choose files“."}
+            </div>
+
             {/* Steps explanation */}
             <ol style={{ paddingLeft: 18, margin: "0 0 14px", fontSize: 12.5, color: "#334155", lineHeight: 1.7 }}>
               <li>{lang === "de"
-                ? <>Klick <b>„Open Adobe Sign“</b>. Adobe öffnet sich in einem neuen Tab.</>
+                ? <><b>„PDF herunterladen“</b> klicken — die Datei landet im Download-Ordner.</>
+                : <>Click <b>“Download PDF”</b> — the file lands in your Downloads folder.</>}</li>
+              <li>{lang === "de"
+                ? <><b>„Open Adobe Sign“</b> klicken. Adobe öffnet in einem neuen Tab.</>
                 : <>Click <b>“Open Adobe Sign”</b>. Adobe opens in a new tab.</>}</li>
               <li>{lang === "de"
-                ? <>In Adobe: Datei <b>aus Google Drive</b> wählen → das PDF aus dem QMS-Ordner.</>
-                : <>In Adobe: pick the file <b>from Google Drive</b> → the PDF from the QMS folder.</>}</li>
+                ? <>In Adobe: heruntergeladene PDF per Drag &amp; Drop ins Fenster ziehen <i>(oder „Dateien auswählen“)</i>.</>
+                : <>In Adobe: drag &amp; drop the downloaded PDF into the window <i>(or use “Choose files”)</i>.</>}</li>
               <li>{lang === "de"
-                ? <>Die 3 Signers eintragen (Reihenfolge: Author → Reviewer → Approver) — Daten unten zum Kopieren.</>
-                : <>Enter the 3 signers (order: Author → Reviewer → Approver) — copy-able info below.</>}</li>
+                ? <>Die 3 Signers eintragen — Daten unten zum Kopieren. Reihenfolge: Author → Reviewer → Approver.</>
+                : <>Enter the 3 signers — copy-able info below. Order: Author → Reviewer → Approver.</>}</li>
               <li>{lang === "de"
-                ? <>In Adobe „Send“ klicken. Adobe verschickt die Emails sequentiell.</>
-                : <>Click “Send” in Adobe. Adobe sends the emails sequentially.</>}</li>
+                ? <>In Adobe „Send“ klicken — Adobe verschickt die Emails sequentiell.</>
+                : <>Click “Send” in Adobe — Adobe sends the emails sequentially.</>}</li>
               <li>{lang === "de"
                 ? <>Zurück hier: <b>„Markiere als an Adobe gesendet“</b> klicken.</>
                 : <>Back here: click <b>“Mark as sent to Adobe”</b>.</>}</li>
             </ol>
+
+            {/* Download PDF row */}
+            <div style={{ display: "flex", gap: 8, marginBottom: 8 }}>
+              <button onClick={downloadPdfFromDrive}
+                      style={{ flex: 1, padding: "10px 14px", fontSize: 13, fontWeight: 600,
+                               border: "none", borderRadius: 6, cursor: "pointer",
+                               background: "#0F2B3C", color: "#fff",
+                               display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 6 }}>
+                <Ic name="open" size={13} color="#fff" />
+                {lang === "de" ? "1. PDF herunterladen" : "1. Download PDF"}
+              </button>
+              <button onClick={openInDrive}
+                      style={{ padding: "10px 14px", fontSize: 12, borderRadius: 6, cursor: "pointer",
+                               border: "1px solid #94A3B8", background: "#fff", color: "#475569" }}
+                      title={lang === "de" ? "Falls Download blockiert: in Drive öffnen und manuell herunterladen" : "If download is blocked: open in Drive and download manually"}>
+                {lang === "de" ? "In Drive öffnen" : "Open in Drive"}
+              </button>
+            </div>
 
             {/* Open Adobe + copy emails */}
             <div style={{ display: "flex", gap: 8, marginBottom: 14 }}>
@@ -169,7 +218,7 @@ export default function AdobeExternalModal({ session, lang, request, onClose, on
                                background: "linear-gradient(135deg,#EA4C2C,#D62D20)", color: "#fff",
                                display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 6 }}>
                 <Ic name="open" size={13} color="#fff" />
-                Open Adobe Sign
+                {lang === "de" ? "2. Adobe Sign öffnen" : "2. Open Adobe Sign"}
               </button>
               <button onClick={() => copy(allEmails, "emails")}
                       style={{ padding: "10px 14px", fontSize: 12, borderRadius: 6, cursor: "pointer",
