@@ -102,10 +102,15 @@ function preferAsSop(curr, next) {
 function normalizeSopKey(rawKey) {
   let key = rawKey.replace("QMH", "QMS");
   if (key === "WM-QMS-002") key = "WM-QMS-001";
-  // Legacy: former SOP-016 (Continuous AI Training) was removed; 017/018/019 renumbered down
-  if (key === "WM-SOP-017") key = "WM-SOP-016";
-  else if (key === "WM-SOP-018") key = "WM-SOP-017";
-  else if (key === "WM-SOP-019") key = "WM-SOP-018";
+  // NOTE: The 017/018/019 → 016/017/018 renumbering used to be applied here
+  // when the QMS still held filenames using the OLD numbering. As of the
+  // 20260526 update, every controlled file has been renamed to the NEW
+  // numbering (016 = Data Management, 017 = ECM, 018 = PCCP), so the legacy
+  // remap is intentionally NOT applied — applying it would move new files
+  // into the wrong SOP bucket (e.g. new PCCP-018 files would land under 017).
+  // If a legacy archive file with the old number ever shows up, it will be
+  // dropped because no SOP-019 entry exists in SOPS (acceptable — it should
+  // be renamed or archived to "_Old" anyway).
   return key;
 }
 
