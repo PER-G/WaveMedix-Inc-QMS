@@ -78,6 +78,103 @@ function OrgChart({ lang }) {
   );
 }
 
+// Embed the released Organization Chart PDF (WM-QMS-001-F-002) from Drive
+// directly in the Team tab. This is the controlled, signed-off version that
+// includes the document-number cross-references, while the custom OrgChart
+// component above is the quick visual summary.
+function OrgChartPdf({ session, lang }) {
+  const [file, setFile] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    if (!session?.accessToken) return;
+    setLoading(true);
+    fetch("/api/drive", { headers: { "x-access-token": session.accessToken } })
+      .then((r) => r.json())
+      .then((data) => {
+        if (data.error) { setError(data.error); setLoading(false); return; }
+        const files = (data.files || []).filter(
+          (x) =>
+            x.name &&
+            x.name.includes("WM-QMS-001-F-002") &&
+            x.name.toLowerCase().endsWith(".pdf") &&
+            !x.isOld,
+        );
+        // Prefer the file in the root, fall back to any match
+        files.sort((a, b) => (a.folder === "root" ? -1 : 1));
+        setFile(files[0] || null);
+        setLoading(false);
+      })
+      .catch((e) => { setError(e.message); setLoading(false); });
+  }, [session?.accessToken]);
+
+  const color = "#028090";
+
+  return (
+    <div style={{ background: "#fff", border: "1px solid #e2e8f0", borderRadius: 10, overflow: "hidden", marginBottom: 16 }}>
+      <div style={{ padding: "12px 20px", borderBottom: "1px solid #e2e8f0", display: "flex", alignItems: "center", gap: 10 }}>
+        <div style={{ width: 32, height: 32, borderRadius: 8, background: `linear-gradient(135deg, ${color}, ${color}99)`, display: "flex", alignItems: "center", justifyContent: "center" }}>
+          <Ic name="users" size={16} color="#fff" />
+        </div>
+        <div style={{ flex: 1 }}>
+          <h3 style={{ margin: 0, fontSize: 14, fontWeight: 700, color: "#0F2B3C" }}>
+            {lang === "de" ? "Offizielles Organigramm (Released)" : "Official Organization Chart (Released)"}
+          </h3>
+          <p style={{ margin: 0, fontSize: 10, color: "#94a3b8" }}>
+            WM-QMS-001-F-002 — {lang === "de" ? "Quelle: Google Drive" : "Source: Google Drive"}
+          </p>
+        </div>
+        {file && (
+          <button
+            onClick={() => window.open(file.webViewLink, "_blank")}
+            style={{ border: "1px solid #e2e8f0", background: "#fff", borderRadius: 4, padding: "3px 8px", cursor: "pointer", fontSize: 11, color, fontWeight: 600, display: "flex", alignItems: "center", gap: 4 }}
+          >
+            <Ic name="open" size={12} color={color} />
+            {lang === "de" ? "In Drive öffnen" : "Open in Drive"}
+          </button>
+        )}
+      </div>
+
+      <div style={{ height: 600 }}>
+        {loading && (
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "100%", color: "#94a3b8", fontSize: 13 }}>
+            <Ic name="loader" size={20} color={color} />
+            <span style={{ marginLeft: 8 }}>{lang === "de" ? "Lade Organigramm..." : "Loading organization chart..."}</span>
+          </div>
+        )}
+        {error && (
+          <div style={{ margin: 16, padding: 12, background: "#fef2f2", border: "1px solid #fecaca", borderRadius: 8, color: "#dc2626", fontSize: 12 }}>
+            {error}
+          </div>
+        )}
+        {!loading && !file && !error && (
+          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", height: "100%", color: "#94a3b8" }}>
+            <Ic name="file" size={40} color="#cbd5e1" />
+            <p style={{ marginTop: 12, fontSize: 13, fontWeight: 600, color: "#64748b" }}>
+              {lang === "de" ? "Organigramm nicht gefunden" : "Organization Chart not found"}
+            </p>
+            <p style={{ fontSize: 11, color: "#94a3b8" }}>
+              {lang === "de"
+                ? "Bitte WM-QMS-001-F-002_Organization_Chart_V01.00.pdf in den QMS-Ordner hochladen."
+                : "Please upload WM-QMS-001-F-002_Organization_Chart_V01.00.pdf to the QMS folder."}
+            </p>
+          </div>
+        )}
+        {!loading && file && (
+          <iframe
+            src={`https://drive.google.com/file/d/${file.id}/preview`}
+            style={{ width: "100%", height: "100%", border: "none" }}
+            title="Organization Chart"
+            sandbox="allow-scripts allow-same-origin allow-popups allow-forms allow-popups-to-escape-sandbox allow-downloads"
+            referrerPolicy="no-referrer-when-downgrade"
+          />
+        )}
+      </div>
+    </div>
+  );
+}
+
 function FunctionMatrix({ session, lang }) {
   const [liveDoc, setLiveDoc] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -205,6 +302,9 @@ export default function TeamTab({ session, lang, t }) {
 
       {/* Organization Chart */}
       <OrgChart lang={lang} />
+
+      {/* Released Organization Chart PDF (WM-QMS-001-F-002) */}
+      <OrgChartPdf session={session} lang={lang} />
 
       {/* Team Members List */}
       {[["Founders", TF], ["Leadership", TL], ["Team", TM]].map(([title, people]) => (
