@@ -1,7 +1,7 @@
 "use client";
 import { useState } from "react";
 import { Ic } from "./icons";
-import { extractVersion, fileExt, cleanFormName, fmtSize, fmtDate, SOPS } from "../lib/dashboardHelpers";
+import { extractVersion, fileExt, cleanFormName, fmtSize, fmtDate, isSignedDoc, SOPS } from "../lib/dashboardHelpers";
 
 export default function SopExplorer({ files, fileMap, loading, lang, t, onPreview, onOpenInDrive }) {
   const [search, setSearch] = useState("");
@@ -109,12 +109,14 @@ export default function SopExplorer({ files, fileMap, loading, lang, t, onPrevie
                         </div>
                         {(fm.workInstructions || []).map((f) => {
                           const ext = fileExt(f.name);
+                          const signed = isSignedDoc(f.name);
                           return (
-                            <div key={f.id} style={{ display: "flex", alignItems: "center", gap: 6, padding: "4px 8px", fontSize: 11, borderRadius: 4, cursor: "pointer", background: selected?.id === f.id ? "#f5f3ff" : "transparent" }} onClick={() => setSelected(f)}>
-                              <Ic name="file" size={12} color="#7C3AED" />
-                              <span style={{ flex: 1, color: "#334155" }}>{cleanFormName(f.name)}</span>
-                              <span style={{ fontSize: 9, color: "#7C3AED", fontWeight: 600 }}>WI</span>
-                              <button onClick={(e) => { e.stopPropagation(); onPreview(f); }} style={{ border: "none", background: "#f5f3ff", borderRadius: 3, padding: "1px 6px", fontSize: 10, cursor: "pointer", color: "#7C3AED" }}><Ic name="eye" size={10} color="#7C3AED" /></button>
+                            <div key={f.id} style={{ display: "flex", alignItems: "center", gap: 6, padding: "4px 8px", fontSize: 11, borderRadius: 4, cursor: "pointer", background: selected?.id === f.id ? (signed ? "#ecfdf5" : "#f5f3ff") : (signed ? "#f0fdf4" : "transparent"), border: signed ? "1px solid #bbf7d0" : "1px solid transparent", marginBottom: 2 }} onClick={() => setSelected(f)}>
+                              <Ic name={signed ? "signature" : "file"} size={12} color={signed ? "#059669" : "#7C3AED"} />
+                              <span style={{ flex: 1, color: signed ? "#065f46" : "#334155", fontWeight: signed ? 600 : 400 }}>{cleanFormName(f.name).replace(/\s+signed\s*$/i, "")}</span>
+                              {signed && <span style={{ fontSize: 9, color: "#fff", background: "#10B981", padding: "1px 6px", borderRadius: 3, fontWeight: 700, letterSpacing: 0.5 }}>SIGNED</span>}
+                              <span style={{ fontSize: 9, color: signed ? "#059669" : "#7C3AED", fontWeight: 600 }}>WI</span>
+                              <button onClick={(e) => { e.stopPropagation(); onPreview(f); }} style={{ border: "none", background: signed ? "#ecfdf5" : "#f5f3ff", borderRadius: 3, padding: "1px 6px", fontSize: 10, cursor: "pointer", color: signed ? "#059669" : "#7C3AED" }}><Ic name="eye" size={10} color={signed ? "#059669" : "#7C3AED"} /></button>
                               <button onClick={(e) => { e.stopPropagation(); onOpenInDrive(f); }} style={{ border: "none", background: "#f1f5f9", borderRadius: 3, padding: "1px 6px", fontSize: 10, cursor: "pointer", color: "#028090" }}>{t.open}</button>
                             </div>
                           );

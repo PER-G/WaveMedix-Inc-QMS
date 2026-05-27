@@ -66,6 +66,14 @@ export function isWorkInstruction(name) {
   return /[-_]WI-?\d{1,3}/i.test(name);
 }
 
+// Released/signed documents — a "_signed" suffix indicates the effective,
+// approved version (PDF that came back from Adobe Sign or was manually signed).
+// This is the controlled record per WM-SOP-001; the unsigned .docx / .pdf
+// remain as editable source.
+export function isSignedDoc(name) {
+  return /_signed(?:[._]|$)/i.test(name);
+}
+
 export function isCoverSheet(name) {
   return /_Cover[_\s]Sheet/i.test(name);
 }
@@ -176,6 +184,20 @@ export function matchFilesToSops(driveFiles) {
       entry.sop = f;
     }
   });
+
+  // Sort each WI list so signed (effective) versions appear first
+  for (const key of Object.keys(map)) {
+    map[key].workInstructions.sort((a, b) => {
+      const aSig = isSignedDoc(a.name) ? 0 : 1;
+      const bSig = isSignedDoc(b.name) ? 0 : 1;
+      if (aSig !== bSig) return aSig - bSig;
+      // Within same signed/unsigned group, .pdf before .docx, then by name
+      const aPdf = /\.pdf$/i.test(a.name) ? 0 : 1;
+      const bPdf = /\.pdf$/i.test(b.name) ? 0 : 1;
+      if (aPdf !== bPdf) return aPdf - bPdf;
+      return (a.name || "").localeCompare(b.name || "");
+    });
+  }
 
   return map;
 }
