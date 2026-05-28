@@ -72,15 +72,26 @@ export default function SopExplorer({ files, fileMap, loading, lang, t, onPrevie
                     )}
 
                     {/* Signature combined PDF (V01.00 signature scope) */}
-                    {fm.signatureDoc && (
-                      <div style={{ display: "flex", alignItems: "center", gap: 6, padding: "5px 8px", fontSize: 11, borderRadius: 4, cursor: "pointer", background: selected?.id === fm.signatureDoc.id ? "#fef3c7" : "#fffbeb", marginBottom: 2, border: "1px solid #fde68a" }} onClick={() => setSelected(fm.signatureDoc)}>
-                        <Ic name="signature" size={12} color="#d97706" />
-                        <span style={{ flex: 1, fontWeight: 600, color: "#92400e" }}>{lang === "de" ? "Signature Bundle" : "Signature Bundle"}</span>
-                        <span style={{ fontSize: 9, color: "#d97706", fontWeight: 600 }}>V01.00 + Formsheets</span>
-                        <button onClick={(e) => { e.stopPropagation(); onPreview(fm.signatureDoc); }} style={{ border: "none", background: "#fef3c7", borderRadius: 3, padding: "1px 6px", fontSize: 10, cursor: "pointer", color: "#d97706" }}><Ic name="eye" size={10} color="#d97706" /></button>
-                        <button onClick={(e) => { e.stopPropagation(); onOpenInDrive(fm.signatureDoc); }} style={{ border: "none", background: "#fffbeb", borderRadius: 3, padding: "1px 6px", fontSize: 10, cursor: "pointer", color: "#d97706" }}>{t.open}</button>
-                      </div>
-                    )}
+                    {fm.signatureDoc && (() => {
+                      const sigSigned = isSignedDoc(fm.signatureDoc.name);
+                      const bg     = sigSigned ? "#f0fdf4" : "#fffbeb";
+                      const bgSel  = sigSigned ? "#ecfdf5" : "#fef3c7";
+                      const border = sigSigned ? "#bbf7d0" : "#fde68a";
+                      const text   = sigSigned ? "#065f46" : "#92400e";
+                      const accent = sigSigned ? "#059669" : "#d97706";
+                      const btnBg  = sigSigned ? "#ecfdf5" : "#fef3c7";
+                      const btnBg2 = sigSigned ? "#f0fdf4" : "#fffbeb";
+                      return (
+                        <div style={{ display: "flex", alignItems: "center", gap: 6, padding: "5px 8px", fontSize: 11, borderRadius: 4, cursor: "pointer", background: selected?.id === fm.signatureDoc.id ? bgSel : bg, marginBottom: 2, border: `1px solid ${border}` }} onClick={() => setSelected(fm.signatureDoc)}>
+                          <Ic name="signature" size={12} color={accent} />
+                          <span style={{ flex: 1, fontWeight: 600, color: text }}>{lang === "de" ? "Signature Bundle" : "Signature Bundle"}</span>
+                          {sigSigned && <span style={{ fontSize: 9, color: "#fff", background: "#10B981", padding: "1px 6px", borderRadius: 3, fontWeight: 700, letterSpacing: 0.5 }}>SIGNED</span>}
+                          <span style={{ fontSize: 9, color: accent, fontWeight: 600 }}>V01.00 + Formsheets</span>
+                          <button onClick={(e) => { e.stopPropagation(); onPreview(fm.signatureDoc); }} style={{ border: "none", background: btnBg, borderRadius: 3, padding: "1px 6px", fontSize: 10, cursor: "pointer", color: accent }}><Ic name="eye" size={10} color={accent} /></button>
+                          <button onClick={(e) => { e.stopPropagation(); onOpenInDrive(fm.signatureDoc); }} style={{ border: "none", background: btnBg2, borderRadius: 3, padding: "1px 6px", fontSize: 10, cursor: "pointer", color: accent }}>{t.open}</button>
+                        </div>
+                      );
+                    })()}
 
                     {/* LIVE documents (continuously-updated registers) */}
                     {liveCount > 0 && (

@@ -160,8 +160,18 @@ export function matchFilesToSops(driveFiles) {
 
     // Signature combined PDF (covers SOP + formsheets at V01.00)
     if (isSignatureDoc(f.name)) {
-      if (!entry.signatureDoc || (f.modifiedTime || "") > (entry.signatureDoc.modifiedTime || "")) {
+      // Always prefer the signed version. If neither (or both) are signed,
+      // fall back to most-recently-modified.
+      const incomingSigned = isSignedDoc(f.name);
+      const currentSigned = entry.signatureDoc ? isSignedDoc(entry.signatureDoc.name) : false;
+      if (!entry.signatureDoc) {
         entry.signatureDoc = f;
+      } else if (incomingSigned && !currentSigned) {
+        entry.signatureDoc = f;
+      } else if (incomingSigned === currentSigned) {
+        if ((f.modifiedTime || "") > (entry.signatureDoc.modifiedTime || "")) {
+          entry.signatureDoc = f;
+        }
       }
       return;
     }
