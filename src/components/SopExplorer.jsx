@@ -37,6 +37,8 @@ export default function SopExplorer({ files, fileMap, loading, lang, t, onPrevie
             const isExp = expanded[sop.id];
             const isOldExp = oldExpanded[sop.id];
             const sopVersion = fm.sop ? extractVersion(fm.sop.name) : null;
+            // Top-level SIGNED indicator: signature bundle exists AND is signed
+            const bundleSigned = fm.signatureDoc && isSignedDoc(fm.signatureDoc.name);
 
             return (
               <div key={sop.id} style={{ padding: "0 8px", marginBottom: 2 }}>
@@ -52,6 +54,12 @@ export default function SopExplorer({ files, fileMap, loading, lang, t, onPrevie
                   <span style={{ fontSize: 12, fontWeight: 600, color: hasFiles ? "#1e293b" : "#94a3b8", minWidth: 100 }}>{sop.id}</span>
                   <span style={{ fontSize: 10, color: "#64748b", flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{lang === "de" ? sop.de : sop.en}</span>
                   {sopVersion && <span style={{ fontSize: 9, background: "#ecfdf5", color: "#059669", padding: "1px 6px", borderRadius: 3, fontWeight: 600, flexShrink: 0 }}>{sopVersion}</span>}
+                  {bundleSigned && (
+                    <span title={lang === "de" ? "Unterzeichnetes Signature Bundle vorhanden" : "Signed signature bundle available"} style={{ fontSize: 9, background: "#10B981", color: "#fff", padding: "1px 6px", borderRadius: 3, fontWeight: 700, letterSpacing: 0.5, flexShrink: 0, display: "inline-flex", alignItems: "center", gap: 3 }}>
+                      <Ic name="check" size={9} color="#fff" />
+                      SIGNED
+                    </span>
+                  )}
                   {fm.sop && (
                     <button onClick={(e) => { e.stopPropagation(); onOpenInDrive(fm.sop); }} style={{ border: "none", background: "#028090", color: "#fff", borderRadius: 4, padding: "2px 6px", fontSize: 10, cursor: "pointer", flexShrink: 0 }}>
                       <Ic name="open" size={10} color="#fff" />
