@@ -177,9 +177,48 @@ export async function GET(request) {
       }
     }
 
+    // ═══ Step 4: APPROVED QMS DOCUMENTS folder (signed/released PDFs) ═══
+    // Signed bundles + signed Work Instructions live in a separate Shared
+    // Drive ("Approved QMS Documents"). They sit alongside the unsigned
+    // working documents (QMH folder) — matchFilesToSops sees both and
+    // prefers the signed version in entry.signatureDoc / sorts signed WIs
+    // first. Folder ID configurable via env, with a hardcoded fallback to
+    // the known shared-drive root (folder ID is in the share URL anyway).
+    const approvedFolderId = process.env.GOOGLE_DRIVE_APPROVED_FOLDER_ID || "0AP0RX8KkfX8GUk9PVA";
+    let approvedCount = 0;
+    if (approvedFolderId) {
+      try {
+        const recurseApproved = async (parentId) => {
+          const items = await listFiles(parentId);
+          for (const f of items) {
+            if (f.mimeType === "application/vnd.google-apps.folder") {
+              await recurseApproved(f.id);
+            } else {
+              if (f.name && f.name.includes("ENTWURF")) continue;
+              allFiles.push({
+                id: f.id, name: f.name, mimeType: f.mimeType,
+                modifiedTime: f.modifiedTime, size: parseInt(f.size || "0"),
+                webViewLink: f.webViewLink, webContentLink: f.webContentLink,
+                lastModifiedBy: f.lastModifyingUser?.displayName || "Unknown",
+                version: f.version,
+                folder: "Approved Documents",
+                isOld: false,
+              });
+              approvedCount++;
+            }
+          }
+        };
+        await recurseApproved(approvedFolderId);
+      } catch (err) {
+        // Non-fatal — approved folder may be inaccessible (e.g. shared-drive
+        // membership missing for the logged-in user). QMS folder still works.
+        console.error(`[DRIVE] Approved folder ${approvedFolderId} error:`, err.message);
+      }
+    }
+
     const currentCount = allFiles.filter(f => !f.isOld).length;
     const oldCount = allFiles.filter(f => f.isOld).length;
-    console.log(`RESULT: ${currentCount} current + ${oldCount} old = ${allFiles.length} total`);
+    console.log(`RESULT: ${currentCount} current (incl. ${approvedCount} approved) + ${oldCount} old = ${allFiles.length} total`);
     return Response.json({ files: allFiles, folderCount: formsheetFolders.length });
   } catch (error) {
     console.error("Drive API error:", error.message);
