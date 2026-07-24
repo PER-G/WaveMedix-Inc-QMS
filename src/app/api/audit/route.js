@@ -2,6 +2,7 @@ import { Readable } from "stream";
 import { google } from "googleapis";
 import Anthropic from "@anthropic-ai/sdk";
 import { loadProjectContext } from "../../../lib/buildSystemPrompt";
+import { AI_MODEL } from "../../../lib/aiConfig";
 
 // ═══ Canonical SOP ordering ═══
 // Former WM-SOP-016 (Continuous AI Training) removed for ISO Phase 1; 017/018/019 renumbered down.
@@ -303,7 +304,7 @@ Language: English. Return ONLY a valid JSON array. No markdown. No code blocks. 
 
   try {
     const result = await client.messages.create({
-      model: "claude-sonnet-4-20250514",
+      model: AI_MODEL,
       max_tokens: 4096,
       system: systemPrompt,
       messages: [{ role: "user", content: docTexts }],

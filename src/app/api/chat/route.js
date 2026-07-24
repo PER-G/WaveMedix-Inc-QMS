@@ -3,6 +3,7 @@ import { promises as fs } from "fs";
 import path from "path";
 import { buildChatSystemPrompt, findRelevantSops, loadProjectContext } from "../../../lib/buildSystemPrompt";
 import { fetchSopText } from "../../../lib/driveHelper";
+import { AI_MODEL } from "../../../lib/aiConfig";
 
 const SOP_RULES_PATH = path.join(process.cwd(), "src", "data", "sop-rules.json");
 
@@ -60,7 +61,7 @@ export async function POST(request) {
 
     const client = new Anthropic({ apiKey });
     const message = await client.messages.create({
-      model: "claude-sonnet-4-20250514",
+      model: AI_MODEL,
       max_tokens: 4096,
       system: systemPrompt,
       messages: messages || [],

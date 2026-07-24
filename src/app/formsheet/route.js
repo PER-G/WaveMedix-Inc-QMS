@@ -2,6 +2,7 @@ import { google } from "googleapis";
 import Anthropic from "@anthropic-ai/sdk";
 import { FORMSHEET_REGISTRY, getRegistryPromptList, findFormsheet } from "../../lib/formsheetRegistry";
 import { fetchSopText } from "../../lib/driveHelper";
+import { AI_MODEL } from "../../lib/aiConfig";
 
 // ═══ Helper: Create authenticated clients ═══
 function createAuth(accessToken) {
@@ -223,7 +224,7 @@ export async function POST(request) {
 
       const client = new Anthropic({ apiKey });
       const result = await client.messages.create({
-        model: "claude-sonnet-4-20250514",
+        model: AI_MODEL,
         max_tokens: 1024,
         system: `Du bist ein QMS-Assistent für Wavemedix Inc. Analysiere die Benutzeranfrage und entscheide, ob der Benutzer ein Formsheet ausfüllen oder ein QMS-Dokument erstellen möchte.
 
@@ -313,7 +314,7 @@ Antworte NUR mit einem JSON-Objekt (kein Markdown, kein Code-Block):
       // Step 3: Ask Claude whether clarification is needed
       const client = new Anthropic({ apiKey });
       const clarifyResult = await client.messages.create({
-        model: "claude-sonnet-4-20250514",
+        model: AI_MODEL,
         max_tokens: 1024,
         system: `Du bist ein intelligenter QMS-Assistent für Wavemedix Inc. Der Benutzer möchte das Formblatt "${formsheetId}" (${registryEntry?.name || formsheetId}) ausfüllen.
 
@@ -440,7 +441,7 @@ Antworte NUR mit einem JSON-Objekt:
 
         try {
           const sheetResult = await client.messages.create({
-            model: "claude-sonnet-4-20250514",
+            model: AI_MODEL,
             max_tokens: 8192,
             system: `Return ONLY a valid JSON object. No markdown. No code blocks. No explanations.
 
@@ -580,7 +581,7 @@ FORMAT:
         console.log(`[FILL] Attempt 1: Sending ${foundPlaceholders.length} placeholders to Claude...`);
         try {
           const fillResult = await client.messages.create({
-            model: "claude-sonnet-4-20250514",
+            model: AI_MODEL,
             max_tokens: 4096,
             system: `Return ONLY a valid JSON object. No markdown. No code blocks. No explanations.
 
@@ -623,7 +624,7 @@ FORMAT: {"replacements": {"[exact placeholder text]": "replacement value"}}
         console.log(`[FILL] Attempt 2: Simplified prompt...`);
         try {
           const retryResult = await client.messages.create({
-            model: "claude-sonnet-4-20250514",
+            model: AI_MODEL,
             max_tokens: 4096,
             system: `Return ONLY a JSON object. The user needs a "${registryEntry?.name || formsheetId}" for: "${userRequest}".
 Use "${today}" for dates. Write in ${contentLang}. Company: Wavemedix Inc.

@@ -3,6 +3,7 @@ import { fetchAllSopTexts } from "../../../lib/driveHelper";
 import { FORMSHEET_REGISTRY } from "../../../lib/formsheetRegistry";
 import { promises as fs } from "fs";
 import path from "path";
+import { AI_MODEL } from "../../../lib/aiConfig";
 
 const SOP_RULES_PATH = path.join(process.cwd(), "src", "data", "sop-rules.json");
 
@@ -51,7 +52,7 @@ export async function POST(request) {
 
       try {
         const result = await client.messages.create({
-          model: "claude-sonnet-4-20250514",
+          model: AI_MODEL,
           max_tokens: 1024,
           system: `Du bist ein QMS-Analyst. Analysiere den folgenden SOP-Text und extrahiere die wichtigsten Informationen.
 
